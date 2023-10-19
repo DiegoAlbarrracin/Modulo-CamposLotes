@@ -1,0 +1,134 @@
+.btn-contenedor {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+}
+
+.filtros-contenedor {
+    display: flex;
+    justify-content: space-around;
+    gap: 8px;
+    align-items: center;
+}
+
+.tabla-mapa-contenedor {
+    display: flex;
+    justify-content: space-between;
+    /* gap: 8px; */
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+.buscador {
+    width: 260px;
+}
+.ant-segmented {
+    min-width: 180px;
+}
+
+
+.titulo-modulo {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+        "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+        sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    padding-left: 10px;
+    display: flex;
+    align-items: center;
+}
+
+.icon-color {
+    color: #56b43c !important;
+}
+
+/* .campo-card-hidde{
+    width: 100%;
+    height: 0%;
+} */
+
+/* .campo-card-show {
+    width: 100%;
+} */
+
+.tabla-lotes-link-animation {
+     /*ANIMATION*/
+    animation-name: despliegue-vertical;
+    animation-duration: 0.5s;
+}
+@keyframes despliegue-vertical{
+    0%{
+        transform: translateY(-62%);
+    }
+
+    100%{
+        transform: translateY(0%);
+    }
+}
+
+
+.tabla-lotes-switch-animation {
+    animation-name: despliegue-horizontal-lotes;
+    animation-duration: 0.5s;
+}
+@keyframes despliegue-horizontal-lotes{
+    0%{
+        transform: scale(95%);
+    }
+
+    100%{
+        transform: scale(100%);
+    }
+}
+
+.tabla-campos-switch-animation {
+
+    animation-name: despliegue-horizontal-campos;
+    animation-duration: 0.5s;
+}
+@keyframes despliegue-horizontal-campos{
+    0%{
+        transform: scale(95%);
+    }
+
+    100%{
+        transform: scale(100%);
+    }
+}
+
+.btn-agregar-contenedor {
+    display: flex;
+    justify-content: flex-end; 
+    gap: 8px;
+    padding-right: 8px;
+}
+
+.ant-segmented-item-selected {
+    color: #56b43c !important;
+    /* border-color: #56b43c !important; */
+}
+
+.btn-agregar {
+    border-radius: 2px;
+}
+
+.btn-agregar:hover {
+    color: #56b43c !important;
+    border-color: #56b43c ;
+    background-color: transparent !important;
+}
+
+
+/*Modal historial Lote*/
+.contenedor-titulo-modal {
+    display: flex;
+    flex-direction: row;
+}
+
+.lote-historial-modal {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+        "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+        sans-serif;
+    font-weight: 500;
+    cursor: default;
+}

@@ -1,0 +1,41 @@
+import { ConfigProvider } from "antd";
+import './App.css';
+import { GlobalContext } from './components/context/GlobalContext';
+import { useState } from 'react';
+import TablaCampos from "./components/ui/TablaCampos";
+import esES from "antd/lib/locale/es_ES";
+import 'mapbox-gl/dist/mapbox-gl.css';
+
+
+function App() {
+  //Mapbox campo
+  const [areaMapa, setAreaMapa] = useState();
+  const [polygonEdit, setPolygonEdit] = useState(false);
+  const [reloadMap, setReloadMap] = useState(false);
+  
+
+  //FormCampos - Mapa
+  const [geojson, setGeojson] = useState();
+
+  //FormCampo - FormLote accion:Guardar
+  const [guardar, setGuardar] = useState(false);
+
+
+
+  return (
+    <GlobalContext.Provider value={{ areaMapa, setAreaMapa, polygonEdit, setPolygonEdit, reloadMap, setReloadMap, geojson, setGeojson, guardar, setGuardar }}>
+      <ConfigProvider
+        locale={esES}
+        theme={{
+          token: {
+            colorPrimary: "#56b43c",
+          },
+        }}
+      >
+        <TablaCampos />
+      </ConfigProvider>
+    </GlobalContext.Provider>
+  );
+}
+
+export default App;

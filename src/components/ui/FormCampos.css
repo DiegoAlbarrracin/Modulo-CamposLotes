@@ -1,0 +1,23 @@
+.input-style {
+    /* margin-top: -5px;
+    margin-bottom: 5px; */
+    width: 160px; 
+}
+
+/* .ant-select {
+    width: 245px !important;
+} */
+
+.btn-guardar-formCampo {
+    width: 100%;
+    margin-top: 10px;
+    border-radius: 2px;
+}
+
+/* .ant-select-selector { 
+    width: 100%;
+} */
+
+.ant-select {
+    width: 100%;
+}
