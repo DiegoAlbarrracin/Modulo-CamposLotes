@@ -276,7 +276,7 @@ function TablaCampos() {
 
     //Asigna el valor de la fila al presionar editar
     const seleccionarLote = (fila, accion) => {
-        console.log(fila)
+        //console.log(fila)
         setMostrarCardHistorial(false); //Card historial se oculta en cualquier otro caso
 
         if (accion === 'crear') {

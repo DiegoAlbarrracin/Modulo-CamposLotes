@@ -67,7 +67,7 @@ function FormLotes({ editarLoteValues, cancelar, notificacion }) {
                 idCondicion: 1
             });
             setLote(prev => ({ ...prev, idCampo: 0, idCondicion: 1 }))
-            console.log('ENTRE EN NUEVO LOTE')
+            //console.log('ENTRE EN NUEVO LOTE')
 
             //El geojson del lote se limpia
             setGeojson(undefined);
@@ -86,8 +86,8 @@ function FormLotes({ editarLoteValues, cancelar, notificacion }) {
 
 
     const crearLote = async () => {
-        console.log(lote)
-        console.log(geojson)
+        //console.log(lote)
+        //console.log(geojson)
 
 
         const data = new FormData();
@@ -119,10 +119,10 @@ function FormLotes({ editarLoteValues, cancelar, notificacion }) {
 
     //Funcion que MODIFICA lote
     const editarLote = async (values) => {
-        console.log('Tratando de editar lote');
-        console.log(values)
-        console.log(editarLoteValues)
-        console.log(geojson)
+        // console.log('Tratando de editar lote');
+        // console.log(values)
+        // console.log(editarLoteValues)
+        // console.log(geojson)
 
         const data = new FormData();
         data.append("idLote", editarLoteValues.key);
