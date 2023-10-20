@@ -13,7 +13,7 @@ import "./Mapa.css";
 const Mapa = ({ editarArea }) => {
 
 
-  const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
+  const MAPBOXTOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
   const [map, setMap] = useState(null);
   const mapDiv = useRef(null);
 
@@ -21,7 +21,7 @@ const Mapa = ({ editarArea }) => {
 
 
   useEffect(() => {
-   
+    mapboxgl.accessToken = MAPBOXTOKEN;
 
 
     //Valores INICIALES del mapa. ESTO ES LO MAS BASICO DE MAPBOX.
