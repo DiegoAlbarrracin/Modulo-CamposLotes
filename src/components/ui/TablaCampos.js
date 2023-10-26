@@ -10,6 +10,7 @@ import {
     Card,
     Tag,
     Tooltip,
+    Popover,
     Modal,
     Divider,
     Typography
@@ -20,9 +21,13 @@ import {
     SearchOutlined,
     ArrowLeftOutlined,
     CloseOutlined,
-    HistoryOutlined
+    HistoryOutlined,
+    PlusOutlined,
+    UploadOutlined
 } from "@ant-design/icons";
 import Link from "antd/es/typography/Link";
+import { TbPolygon } from "react-icons/tb";
+//import { BiImport } from "react-icons/bi";
 import "./TablaCampos.css";
 import { GlobalContext } from "../context/GlobalContext";
 import FormCampos from "./FormCampos";
@@ -51,9 +56,7 @@ function TablaCampos() {
     const [mostrarCardHistorial, setMostrarCardHistorial] = useState(false); //muestra historial de Lote.
 
 
-    const { areaMapa, setAreaMapa, setPolygonEdit, polygonEdit, reloadMap, setReloadMap, guardar, setGuardar } = useContext(GlobalContext);
-
-    const [areaEditar, setAreaEditar] = useState();
+    const { areaMapa, setAreaMapa, setPolygonEdit, polygonEdit, reloadMap, setReloadMap, guardar, setGuardar, setUbicacionCampo, areaEditar, setAreaEditar } = useContext(GlobalContext);
 
 
     useEffect(() => {
@@ -89,7 +92,7 @@ function TablaCampos() {
         const data = await fetch(`${URL}cam_historialLote.php`);
         const jsonData = await data.json();
         setHistorialLotes(jsonData);
-        console.log(jsonData)
+        //console.log(jsonData)
     };
 
 
@@ -250,7 +253,7 @@ function TablaCampos() {
                         {fila.condicion === '0' && <Tag color="error">ALQUILADO</Tag>}
                         {fila.condicion === null && <Tag color="default">LIMPIAR DE BD</Tag>} {/*salva el error de los lotes sin campo registrados desde antes de este modulo. Dichos lotes NO estan registrados en tabla agro_lotesxsocio, deben eliminarse de la bd, ya que no se puede modificar su condicion*/}
 
-                        {fila.geojson === null && <Tag color="default">SIN GEOJSON</Tag>}
+                        {fila.geojson === null || fila.geojson === '' && <Tag color="default">SIN GEOJSON</Tag>}
                     </>
                 );
             },
@@ -280,6 +283,7 @@ function TablaCampos() {
         setMostrarCardHistorial(false); //Card historial se oculta en cualquier otro caso
 
         if (accion === 'crear') {
+            setCampo(undefined);
             setSwitchValue('NINGUNO');
             setMostrarABMLote(true);
             setNuevoLoteLabel(true);
@@ -349,6 +353,7 @@ function TablaCampos() {
 
     const closeABMLote = () => {
 
+        setUbicacionCampo(undefined); //Al cerrar el ABM de Lote, que se dirija a la posicion general de cliente a traves de sus parametros, no la del campo seleccionado en el select.
         setReloadMap(!reloadMap);
         setAreaEditar(undefined);
         setLote(undefined); //Al presionar volver en campo seleccionado, eliminaria el que habia selecc.
@@ -410,6 +415,18 @@ function TablaCampos() {
             align: "center"
         },
         {
+            title: "CULTIVO",
+            dataIndex: "cultivo",
+            key: "cultivo",
+            align: "left"
+        },
+        {
+            title: "CICLO",
+            dataIndex: "ciclo",
+            key: "ciclo",
+            align: "center"
+        },
+        {
             title: "FECHA SIEMBRA",
             dataIndex: "fechasiembra",
             key: "fechasiembra",
@@ -421,17 +438,23 @@ function TablaCampos() {
             // )
         },
         {
-            title: "CULTIVO",
-            dataIndex: "cultivo",
-            key: "cultivo",
-            align: "left"
-        },
-        {
-            title: "CULTIVO ANTERIOR",
+            title: "ANTERIOR",
             dataIndex: "cultivoA",
             key: "cultivoA",
             align: "left"
         },
+        {
+            title: "RINDE EST.",
+            dataIndex: "rindeest",
+            key: "rindeest",
+            align: "left"
+        },
+        {
+            title: "COSTO EST.",
+            dataIndex: "costoest",
+            key: "costoest",
+            align: "left"
+        }
         // {
         //     title: "...",
         //     key: "acciones",
@@ -567,7 +590,7 @@ function TablaCampos() {
                         extra={<CloseOutlined onClick={closeABMLote} />}
                         className={"tabla-lotes-switch-animation"}
                     >
-                        <FormLotes editarLoteValues={lote} cancelar={closeABMLote} notificacion={accionGuardarABM} />
+                        <FormLotes editarLoteValues={lote} cancelar={closeABMLote} notificacion={accionGuardarABM} dataCampos={tableDataCampos} />
                     </Card> : ''}
 
 
@@ -579,6 +602,7 @@ function TablaCampos() {
 
                 <Col xs={24} sm={24} md={13} style={{ height: '820px' }} >
                     <Mapa editarArea={areaEditar} />
+
 
                     <div className="area-calculada-contenedor" >
                         {mostrarABMCampo || mostrarABMLote ? <Card
@@ -605,7 +629,7 @@ function TablaCampos() {
 
 
 
-                    { mostrarCardHistorial ? <div className="card-historialLote-contenedor">
+                    {mostrarCardHistorial ? <div className="card-historialLote-contenedor">
                         {/* Modal historial lote */}
                         <Card
                             title={
@@ -632,7 +656,7 @@ function TablaCampos() {
                                             showSizeChanger: false,
                                             defaultPageSize: 2,
                                             size: "small",
-                                            style:{margin:"8px 0px 8px 0px"}
+                                            style: { margin: "8px 0px 8px 0px" }
                                         }}
                                     />
 
@@ -640,7 +664,7 @@ function TablaCampos() {
                             </Row>
 
                         </Card>
-                    </div> : '' }
+                    </div> : ''}
 
 
                 </Col>

@@ -16,14 +16,23 @@ function App() {
 
   //FormCampos - Mapa
   const [geojson, setGeojson] = useState();
-
+  const [areaEditar, setAreaEditar] = useState();
+  
   //FormCampo - FormLote accion:Guardar
   const [guardar, setGuardar] = useState(false);
+  //FormLote accion: marcar campo seleccionado en el mapa, al crear/modificar lote.
+  const [newLote, setNewLote] = useState();
+
+
+  //FormLote - FormLote accion: onChange select campo
+  const [ubicacionCampo, setUbicacionCampo] = useState();
+
+
 
 
 
   return (
-    <GlobalContext.Provider value={{ areaMapa, setAreaMapa, polygonEdit, setPolygonEdit, reloadMap, setReloadMap, geojson, setGeojson, guardar, setGuardar }}>
+    <GlobalContext.Provider value={{ areaMapa, setAreaMapa, polygonEdit, setPolygonEdit, reloadMap, setReloadMap, geojson, setGeojson, guardar, setGuardar, ubicacionCampo, setUbicacionCampo, areaEditar, setAreaEditar, newLote, setNewLote }}>
       <ConfigProvider
         locale={esES}
         theme={{

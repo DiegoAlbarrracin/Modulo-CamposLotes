@@ -7,17 +7,30 @@ import {
     DatePicker,
     Row,
     Col,
+    Segmented,
+    Avatar
 } from "antd";
+import {
+    CloseOutlined,
+    InboxOutlined,
+    PaperClipOutlined,
+    UserOutlined,
+    UploadOutlined
+} from "@ant-design/icons";
+import { TbPolygon } from "react-icons/tb";
 import FormItem from "antd/es/form/FormItem";
 import dayjs from "dayjs";
+import { message, Upload } from 'antd';
 import { GlobalContext } from "../context/GlobalContext";
 import './FormLotes.css';
+import ImportKML from "./ImportKML";
 
-function FormLotes({ editarLoteValues, cancelar, notificacion }) {
+function FormLotes({ editarLoteValues, cancelar, notificacion, dataCampos }) {
 
     const URL = process.env.REACT_APP_URL;
     const formRef = useRef(null);
-    const { geojson, setGeojson, guardar, setGuardar, areaMapa } = useContext(GlobalContext);
+    const { Dragger } = Upload;
+    const { geojson, setGeojson, guardar, setGuardar, areaMapa, reloadMap, setReloadMap, ubicacionCampo, setUbicacionCampo } = useContext(GlobalContext);
     const idUserLogged = localStorage.getItem("usuario");
     const [dataClientes, setDataClientes] = useState([]);
     const [optionsCampos, setoptionsCampos] = useState();
@@ -56,6 +69,14 @@ function FormLotes({ editarLoteValues, cancelar, notificacion }) {
             });
             //Seteamos el geojson que viene en el Lote a modificar
             setGeojson(editarLoteValues.geojson);
+
+            //seteo el geojson del Campo asignado al Lote a modificar
+
+            if ( editarLoteValues.idCampo > 0) { //Siempre y cuando no sea 'SIN CAMPO'
+                const ubiCampo = dataCampos?.find((campo) => campo.key === editarLoteValues.idCampo);
+                setUbicacionCampo(JSON.parse(ubiCampo.geojson))
+                setReloadMap(!reloadMap);
+            }
         }
 
         //Si estamos creando nuevo lote, por defecto Campo: sin campo, Condicion:propio
@@ -87,7 +108,7 @@ function FormLotes({ editarLoteValues, cancelar, notificacion }) {
 
     const crearLote = async () => {
         //console.log(lote)
-        //console.log(geojson)
+        console.log(geojson)
 
 
         const data = new FormData();
@@ -166,6 +187,22 @@ function FormLotes({ editarLoteValues, cancelar, notificacion }) {
         label: cliente.cli_nombre,
     }));
 
+    const handleChangeCampo = (e) => {
+
+        setLote(prev => ({ ...prev, idCampo: e }));
+
+        if (e > 0) { //Siempre y cuando no sea 'SIN CAMPO'
+            const ubiCampo = dataCampos?.find((campo) => campo.key === e);
+            setUbicacionCampo(JSON.parse(ubiCampo.geojson))
+            setReloadMap(!reloadMap);
+        }else{ //en caso de ser 0 la seleccion (sin campo), limpiamos el mapa.
+            setUbicacionCampo(undefined)
+            setReloadMap(!reloadMap);
+        }
+
+    };
+    //console.log(ubicacionCampo);
+
     return (
         <>
             <Form
@@ -191,7 +228,7 @@ function FormLotes({ editarLoteValues, cancelar, notificacion }) {
                     </Col>
 
                     <Col xs={24} sm={24} md={11}>
-                    
+
                         <FormItem name="has" label="Has."
                             hasFeedback
                             rules={[
@@ -201,11 +238,11 @@ function FormLotes({ editarLoteValues, cancelar, notificacion }) {
                                     pattern: "^[0-9,$]*$"
                                 }
                             ]}>
-                                                        
+
                             <Input name="has" onChange={handleChange} />
 
                         </FormItem>
-                        { lote.has != areaMapa & areaMapa > 0 & lote.has > 0 ? <div style={{color:"orange", marginTop:"-23px"}}>Las has.: introducida y calculada, no coinciden (puede guardar igualmente).</div> : ''}
+                        {lote.has != areaMapa & areaMapa > 0 & lote.has > 0 ? <div style={{ color: "orange", marginTop: "-23px" }}>Las has.: introducida y calculada, no coinciden (puede guardar igualmente).</div> : ''}
                     </Col>
 
 
@@ -247,7 +284,7 @@ function FormLotes({ editarLoteValues, cancelar, notificacion }) {
                                 optionFilterProp="children"
                                 filterOption={(input, option) => (option?.label ?? '').includes(input.toUpperCase().trim())}
                                 options={optionsCampos}
-                                onChange={(e) => setLote(prev => ({ ...prev, idCampo: e }))}
+                                onChange={handleChangeCampo}
                                 name="idCampo"
                             />
                         </FormItem>
@@ -283,12 +320,18 @@ function FormLotes({ editarLoteValues, cancelar, notificacion }) {
                 </Row>
 
 
+
+                {!editarLoteValues ? <ImportKML /> : ''}
+
+
+
+
                 <div style={{ display: "flex", justifyContent: "space-between", gap: "8px" }}>
                     <Button
-                        type="primary"
+                        //type="primary"
                         onClick={() => cancelar()}
                         className='btn-guardar-formLote'
-                        danger
+                    //danger
                     >CANCELAR</Button>
                     <Button
                         type="primary"

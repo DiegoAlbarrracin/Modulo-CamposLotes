@@ -281,10 +281,10 @@ function FormCampos({ editarCampoValues, cancelar, notificacion }) {
 
                 <div style={{ display: "flex", justifyContent: "space-between", gap: "8px" }}>
                     <Button
-                        type="primary"
+                        //type="primary"
                         onClick={() => cancelar('CAMPOS')}
                         className='btn-guardar-formCampo'
-                        danger
+                        //danger
                     >CANCELAR</Button>
                     <Button
                         type="primary"

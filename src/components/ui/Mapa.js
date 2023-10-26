@@ -14,34 +14,44 @@ const Mapa = ({ editarArea }) => {
 
 
   const MAPBOXTOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
+  const URL = process.env.REACT_APP_URL;
   const [map, setMap] = useState(null);
   const mapDiv = useRef(null);
+  const [clienteParams, setClienteParams] = useState();
 
-  const { setAreaMapa, polygonEdit, reloadMap, setGeojson  } = useContext(GlobalContext);
+  const { setAreaMapa, polygonEdit, reloadMap, setGeojson, ubicacionCampo, setUbicacionCampo } = useContext(GlobalContext);
 
 
   useEffect(() => {
-    mapboxgl.accessToken = MAPBOXTOKEN;
 
+    fetchParamCliente();
+  }, []);
+
+  const fetchParamCliente = async () => {
+    const data = await fetch(`${URL}cam_clienteParametros.php`);
+    const jsonData = await data.json();
+    setClienteParams(jsonData);
+    //console.log(jsonData)
+  };
+
+  //clienteParams ? console.log(clienteParams[0].coordinates) : console.log('aaaa')
+
+  useEffect(() => {
+    mapboxgl.accessToken = MAPBOXTOKEN;
 
     //Valores INICIALES del mapa. ESTO ES LO MAS BASICO DE MAPBOX.
     const map = new mapboxgl.Map({
       container: mapDiv.current,
       style: "mapbox://styles/mapbox/satellite-streets-v11",
-      center: [-62.69572643, -31.86263305], //Ubicacion apenas carga el mapa
+      center: clienteParams ? JSON.parse(clienteParams[0].coordinates) : [-62.67741539, -31.8276833], //Ubicacion apenas carga el mapa
       zoom: 8, //zoom inicial
     });
-    //Valores INICIALES del mapa. ESTO ES LO MAS BASICO DE MAPBOX.
 
 
     // Add zoom and rotation controls to the map.
     map.addControl(new mapboxgl.NavigationControl());
     map.addControl(new mapboxgl.FullscreenControl());
     map.addControl(new PitchToggle({ minpitchzoom: 14 }), "top-right");
-
-
-
-
 
 
 
@@ -82,12 +92,48 @@ const Mapa = ({ editarArea }) => {
           //Ocultar botones crear y eliminar polygon
           showHideBtnsMapa();
         }
+
       };
 
 
 
+      if (ubicacionCampo) {
 
-      //Calcular area del poligono LISTO
+        //Marcamos el area del Campo al cual pertenece el lote, para guiar al usuario.
+        map.addSource("idSource", {
+          type: "geojson",
+          data: {
+            type: "FeatureCollection",
+            features: [
+              {
+                type: "Feature",
+                properties: {},
+                geometry: {
+                  coordinates: [
+                    ubicacionCampo,
+                  ],
+                  type: "Polygon",
+                },
+              },
+            ],
+          },
+        });
+
+        map.addLayer({
+          id: "idLayerLine",
+          type: "line",
+          source: "idSource",
+          paint: {
+            "line-color": "red",
+            "line-width": 2,
+          },
+        });
+
+      };
+
+
+
+      //Calcular area del poligono.
       map.on('draw.create', updateArea);
       map.on('draw.delete', updateArea);
       map.on('draw.update', updateArea);
@@ -108,16 +154,12 @@ const Mapa = ({ editarArea }) => {
             alert('Click the map to draw a polygon.');
         }
       }
-      //Calcular area del poligono LISTO
+      //Calcular area del poligono.
 
 
 
     });
-    //fin Funcion que marca con poligonos y colorea una zona del mapa
-
-
-
-
+    //fin Funcion map.on("load").
 
 
 
@@ -177,7 +219,6 @@ const Mapa = ({ editarArea }) => {
     //POSICION GENERICA (previo a seleccionar Campo o Lote)
     // centrado de viewport con turf (Esto hace que el mapa se mueva al lugar que queramos). 
     if (!editarArea) {
-
       const geojsonBoundsGenerico = turf.bbox({
         type: "FeatureCollection",
         features: [
@@ -186,16 +227,20 @@ const Mapa = ({ editarArea }) => {
             properties: {},
             geometry: {
               type: "Point", //IMPORTANTE
-              coordinates: [
-                -62.67741539,
-                -31.8276833
-              ],
+              // coordinates: [
+              //   -62.67741539,
+              //   -31.8276833
+              // ]
+              coordinates: ubicacionCampo ? ubicacionCampo[0] : clienteParams ? JSON.parse(clienteParams[0].coordinates) : [
+                -62.67741539, -31.8276833],
             },
           }
         ],
       });
 
-      map.fitBounds(geojsonBoundsGenerico, { padding: 10, zoom: 4 });
+      map.fitBounds(geojsonBoundsGenerico, { padding: 10, zoom: clienteParams ? 11 : 4 });
+      //setUbicacionCampo(undefined); //despues de dirigirse a la ubicacion del campo seleccionado, se limpia.
+
     }
 
 
@@ -226,6 +271,22 @@ const Mapa = ({ editarArea }) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   const showHideBtnsMapa = () => {
     //Ocultar botones crear y eliminar polygon
     let polygonIcon = document.getElementsByClassName("mapbox-gl-draw_polygon");
@@ -238,7 +299,6 @@ const Mapa = ({ editarArea }) => {
       trashIcon[i].style.display = 'none';
     };
   };
-
 
 
 

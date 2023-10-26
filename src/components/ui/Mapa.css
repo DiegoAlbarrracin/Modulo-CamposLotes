@@ -41,3 +41,11 @@
     height: 100%;
     position: absolute;
 }
+
+/*btn hover con opciones para crear area*/
+.btn-popup-contenedor {
+    position: absolute !important;
+    right: 10px;
+    top: 185px;
+    /* padding: 0px 0px 40px 0px; */
+}
