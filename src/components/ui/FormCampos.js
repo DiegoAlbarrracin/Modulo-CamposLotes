@@ -4,12 +4,10 @@ import {
     Form,
     Input,
     Select,
-    DatePicker,
     Row,
     Col
 } from "antd";
 import FormItem from "antd/es/form/FormItem";
-import dayjs from "dayjs";
 import { GlobalContext } from "../context/GlobalContext";
 import './FormCampos.css';
 
@@ -20,7 +18,7 @@ function FormCampos({ editarCampoValues, cancelar, notificacion }) {
     const { TextArea } = Input;
     const formRef = useRef(null);
     const idUserLogged = localStorage.getItem("usuario");
-    const { geojson, setGeojson, guardar, setGuardar } = useContext(GlobalContext);
+    const { geojson, setGeojson } = useContext(GlobalContext);
     const [optionsPlanta, setoptionsPlanta] = useState();
     const [dataClientes, setDataClientes] = useState([]);
     const [campo, setCampo] = useState({
@@ -50,7 +48,7 @@ function FormCampos({ editarCampoValues, cancelar, notificacion }) {
 
     useEffect(() => {
 
-        if (editarCampoValues && editarCampoValues != 0) {
+        if (editarCampoValues && editarCampoValues !== 0) {
             formRef.current.setFieldsValue({
                 nombreCampo: editarCampoValues.nombreCampo,
                 descripcion: editarCampoValues.descripcion,
@@ -65,7 +63,7 @@ function FormCampos({ editarCampoValues, cancelar, notificacion }) {
             setGeojson(editarCampoValues.geojson);
         }
         //Si estamos creando nuevo campo, Estado por defecto es activo
-        if (editarCampoValues == 0) {
+        if (editarCampoValues === 0) {
 
             document.getElementById("formCampos").reset();
             formRef.current.setFieldsValue({

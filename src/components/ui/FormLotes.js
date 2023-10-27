@@ -4,23 +4,11 @@ import {
     Form,
     Input,
     Select,
-    DatePicker,
     Row,
     Col,
-    Segmented,
-    Avatar
 } from "antd";
-import {
-    CloseOutlined,
-    InboxOutlined,
-    PaperClipOutlined,
-    UserOutlined,
-    UploadOutlined
-} from "@ant-design/icons";
-import { TbPolygon } from "react-icons/tb";
 import FormItem from "antd/es/form/FormItem";
-import dayjs from "dayjs";
-import { message, Upload } from 'antd';
+import { Upload } from 'antd';
 import { GlobalContext } from "../context/GlobalContext";
 import './FormLotes.css';
 import ImportKML from "./ImportKML";
@@ -30,7 +18,7 @@ function FormLotes({ editarLoteValues, cancelar, notificacion, dataCampos }) {
     const URL = process.env.REACT_APP_URL;
     const formRef = useRef(null);
     const { Dragger } = Upload;
-    const { geojson, setGeojson, guardar, setGuardar, areaMapa, reloadMap, setReloadMap, ubicacionCampo, setUbicacionCampo } = useContext(GlobalContext);
+    const { geojson, setGeojson, areaMapa, reloadMap, setReloadMap, setUbicacionCampo } = useContext(GlobalContext);
     const idUserLogged = localStorage.getItem("usuario");
     const [dataClientes, setDataClientes] = useState([]);
     const [optionsCampos, setoptionsCampos] = useState();
@@ -59,7 +47,7 @@ function FormLotes({ editarLoteValues, cancelar, notificacion, dataCampos }) {
 
     useEffect(() => {
 
-        if (editarLoteValues && editarLoteValues != 0) {
+        if (editarLoteValues && editarLoteValues !== 0) {
             formRef.current.setFieldsValue({
                 nombreLote: editarLoteValues.nombreLote,
                 has: editarLoteValues.has,
@@ -80,7 +68,7 @@ function FormLotes({ editarLoteValues, cancelar, notificacion, dataCampos }) {
         }
 
         //Si estamos creando nuevo lote, por defecto Campo: sin campo, Condicion:propio
-        if (editarLoteValues == 0) {
+        if (editarLoteValues === 0) {
 
             document.getElementById("formLotes").reset();
             formRef.current.setFieldsValue({
@@ -201,8 +189,8 @@ function FormLotes({ editarLoteValues, cancelar, notificacion, dataCampos }) {
         }
 
     };
-    //console.log(ubicacionCampo);
 
+    
     return (
         <>
             <Form
@@ -242,7 +230,7 @@ function FormLotes({ editarLoteValues, cancelar, notificacion, dataCampos }) {
                             <Input name="has" onChange={handleChange} />
 
                         </FormItem>
-                        {lote.has != areaMapa & areaMapa > 0 & lote.has > 0 ? <div style={{ color: "orange", marginTop: "-23px" }}>Las has.: introducida y calculada, no coinciden (puede guardar igualmente).</div> : ''}
+                        {lote.has !== areaMapa & areaMapa > 0 & lote.has > 0 ? <div style={{ color: "orange", marginTop: "-23px" }}>Las has.: introducida y calculada, no coinciden (puede guardar igualmente).</div> : ''}
                     </Col>
 
 

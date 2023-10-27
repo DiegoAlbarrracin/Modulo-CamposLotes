@@ -10,24 +10,15 @@ import {
     Card,
     Tag,
     Tooltip,
-    Popover,
-    Modal,
-    Divider,
-    Typography
 } from "antd";
 import {
     EditOutlined,
-    EyeOutlined,
     SearchOutlined,
     ArrowLeftOutlined,
     CloseOutlined,
     HistoryOutlined,
-    PlusOutlined,
-    UploadOutlined
 } from "@ant-design/icons";
 import Link from "antd/es/typography/Link";
-import { TbPolygon } from "react-icons/tb";
-//import { BiImport } from "react-icons/bi";
 import "./TablaCampos.css";
 import { GlobalContext } from "../context/GlobalContext";
 import FormCampos from "./FormCampos";
@@ -58,6 +49,7 @@ function TablaCampos() {
 
     const { areaMapa, setAreaMapa, setPolygonEdit, polygonEdit, reloadMap, setReloadMap, guardar, setGuardar, setUbicacionCampo, areaEditar, setAreaEditar } = useContext(GlobalContext);
 
+    const screenH = window.innerHeight;
 
     useEffect(() => {
 
@@ -390,8 +382,8 @@ function TablaCampos() {
             return;
         } else {
             showMessage();
-            if (tipo == 'campo') selectedOption('CAMPOS');
-            if (tipo == 'lote') closeABMLote();
+            if (tipo === 'campo') selectedOption('CAMPOS');
+            if (tipo === 'lote') closeABMLote();
             setGuardar(!guardar);
         }
 
@@ -471,14 +463,14 @@ function TablaCampos() {
         // }
     ];
 
-    // console.log(areaEditar)
+    console.log(screenH)
 
     return (
-        <>
+        <div className="tabla-main-wrapper">
 
-            <h3 className="titulo-modulo">CAMPOS</h3>
+            <h3 className="titulo-modulo" >CAMPOS</h3>
 
-            <Row style={{ marginBottom: "8px" }}>
+            <Row>
                 <Col xs={24} sm={12} md={10} className="filtros-contenedor">
 
 
@@ -507,7 +499,7 @@ function TablaCampos() {
             </Row>
             {/* aca podemos probar con un Space para separar las tablas (que seria tabla y mapa) */}
 
-            <Row className="tabla-mapa-contenedor">
+            <Row className="tabla-mapa-contenedor" style={{ paddingBottom:"8px", paddingTop:"8px" }}>
 
                 <Col xs={24} sm={24} md={10} >
 
@@ -536,7 +528,7 @@ function TablaCampos() {
 
 
 
-                    {switchValue == 'LOTES' & !mostrarCampoSelec ? <Card
+                    {switchValue === 'LOTES' & !mostrarCampoSelec ? <Card
                         title="Lotes sin campo asignado"
                         bordered={true}
                         bodyStyle={{ padding: '0px' }}
@@ -593,14 +585,10 @@ function TablaCampos() {
                         <FormLotes editarLoteValues={lote} cancelar={closeABMLote} notificacion={accionGuardarABM} dataCampos={tableDataCampos} />
                     </Card> : ''}
 
-
-
-
-
                 </Col>
 
 
-                <Col xs={24} sm={24} md={13} style={{ height: '820px' }} >
+                <Col xs={24} sm={24} md={13} >
                     <Mapa editarArea={areaEditar} />
 
 
@@ -649,7 +637,7 @@ function TablaCampos() {
 
                                     <Table
                                         size={"small"}
-                                        dataSource={historialLotes?.filter((loteh) => loteh.idLote == lote?.key)}
+                                        dataSource={historialLotes?.filter((loteh) => loteh.idLote === lote?.key)}
                                         columns={columnsHistorialLote}
                                         pagination={{
                                             position: ["none", "bottomRight"],
@@ -666,13 +654,12 @@ function TablaCampos() {
                         </Card>
                     </div> : ''}
 
-
                 </Col>
 
             </Row>
 
 
-        </>
+        </div>
     )
 }
 

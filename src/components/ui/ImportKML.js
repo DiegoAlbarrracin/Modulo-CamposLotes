@@ -1,7 +1,6 @@
 import React, { useContext, useState } from "react";
 import { InboxOutlined, UploadOutlined } from '@ant-design/icons';
-import { message, Upload, App,  Row, Col, Segmented } from 'antd';
-import FormItem from "antd/es/form/FormItem";
+import { Upload, App,  Row, Col, Segmented } from 'antd';
 import { geojsonFormater } from "../../util/geojsonFormater";
 import { TbPolygon } from "react-icons/tb";
 import { GlobalContext } from "../context/GlobalContext";
