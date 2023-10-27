@@ -1,13 +1,13 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useRef, useState, Fragment, useContext } from "react";
-import mapboxgl from "mapbox-gl";
 import PitchToggle from "../Hooks/pitchToggle";
 import * as MapboxDraw from "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw";
 import * as turf from "@turf/turf";
 import { GlobalContext } from "../context/GlobalContext";
 import { numberFormater } from "../../util/numberFormater";
 import "./Mapa.css";
-
+// eslint-disable-next-line import/no-webpack-loader-syntax
+import mapboxgl from "!mapbox-gl";
 
 
 const Mapa = ({ editarArea }) => {
@@ -132,7 +132,6 @@ const Mapa = ({ editarArea }) => {
       };
 
 
-
       //Calcular area del poligono.
       map.on('draw.create', updateArea);
       map.on('draw.delete', updateArea);
@@ -160,37 +159,6 @@ const Mapa = ({ editarArea }) => {
 
     });
     //fin Funcion map.on("load").
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     //POSICION RELACIONADA A SELECCION (ya seleccionado Campo o Lote)
@@ -266,24 +234,6 @@ const Mapa = ({ editarArea }) => {
 
 
   }, [reloadMap]);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
