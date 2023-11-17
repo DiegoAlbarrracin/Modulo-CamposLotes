@@ -3,3 +3,7 @@
     margin-top: 10px;
     border-radius: 2px;
 }
+
+.ant-upload-wrapper .ant-upload-drag .ant-upload{
+    padding: 4px 0;
+}

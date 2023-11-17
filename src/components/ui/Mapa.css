@@ -32,6 +32,24 @@
     padding: 0px 0px 40px 0px;
     display: flex;
     justify-content: center;
+    border-radius: 2px;
+}
+
+#tablaHistorial > .ant-table-container > .ant-table-content > table > .ant-table-tbody > tr > td {
+    padding: 2px !important;
+}
+
+#tablaHistorial > .ant-table-container > .ant-table-content > table > .ant-table-thead > tr > th {
+    font-size: 12px;
+    padding: 4px;
+}
+
+#tablaHistorial > .ant-table-container > .ant-table-content > table > .ant-table-tbody > .ant-table-placeholder > .ant-table-cell > .ant-empty {
+    margin: 8px;
+}
+
+.historial-sindata{
+    display: none;
 }
 
 

@@ -10,6 +10,7 @@ import {
     Card,
     Tag,
     Tooltip,
+    Spin
 } from "antd";
 import {
     EditOutlined,
@@ -17,6 +18,7 @@ import {
     ArrowLeftOutlined,
     CloseOutlined,
     HistoryOutlined,
+    LoadingOutlined
 } from "@ant-design/icons";
 import Link from "antd/es/typography/Link";
 import "./TablaCampos.css";
@@ -26,9 +28,12 @@ import FormLotes from "./FormLotes";
 import Mapa from "./Mapa";
 import { geojsonFormater } from "../../util/geojsonFormater";
 
+
 function TablaCampos() {
 
     const URL = process.env.REACT_APP_URL;
+
+    const tipoAcceso = localStorage.getItem("camposlotes");
 
     const { message } = App.useApp();
     const [searchedText, setSearchedText] = useState('');
@@ -37,6 +42,7 @@ function TablaCampos() {
     const [lote, setLote] = useState();
     const [tableDataLotes, setTableDataLotes] = useState();
     const [historialLotes, setHistorialLotes] = useState();
+    const [loading, setLoading] = useState(true);
 
     const [switchValue, setSwitchValue] = useState('CAMPOS'); //muestra tabla Campos o Lotes
     const [mostrarABMCampo, setMostrarABMCampo] = useState(false); //muestra abm Campo
@@ -47,9 +53,8 @@ function TablaCampos() {
     const [mostrarCardHistorial, setMostrarCardHistorial] = useState(false); //muestra historial de Lote.
 
 
-    const { areaMapa, setAreaMapa, setPolygonEdit, polygonEdit, reloadMap, setReloadMap, guardar, setGuardar, setUbicacionCampo, areaEditar, setAreaEditar } = useContext(GlobalContext);
+    const { areaMapa, setAreaMapa, setPolygonEdit, polygonEdit, reloadMap, setReloadMap, guardar, setGuardar, setUbicacionCampo, setUbicacionLote, areaEditar, setAreaEditar, setIdCampoS } = useContext(GlobalContext);
 
-    const screenH = window.innerHeight;
 
     useEffect(() => {
 
@@ -65,19 +70,32 @@ function TablaCampos() {
 
         reloadDataLotes();
 
-    }, [campo]);
+    }, [tableDataCampos, campo]);
 
-    useEffect(() => {
-
-        reloadDataLotes();
-
-    }, [tableDataCampos]);
 
     const fetchDataCampos = async () => {
-        const data = await fetch(`${URL}campos-lotes-master.php`);
+        
+        //Si no existe un cliSelect en localStorage, significa que no estamos en la vista clientes, estamos en la vista generica.        
+        const dataForm = new FormData();
+
+        if (tipoAcceso == 'generico') {
+            dataForm.append("idCliente", 0);
+        };
+
+        if (tipoAcceso == 'cliente') {
+            dataForm.append("idCliente", localStorage.getItem("cliSelect"));
+        };
+
+
+        const requestOptions = {
+            method: 'POST',
+            body: dataForm
+        };
+        const data = await fetch(`${URL}campos-lotes-master.php`, requestOptions);
         const jsonData = await data.json();
         setTableDataCampos(jsonData);
-        //console.log(jsonData)
+        setLoading(false);
+        //console.log('fetchDataCampos',jsonData)
     };
 
     const fetchDataHistorialLote = async () => {
@@ -167,10 +185,12 @@ function TablaCampos() {
 
     //Asigna el valor de la fila
     const seleccionarCampo = (fila, accion) => {
-        // console.log(fila)
+
         setMostrarCardHistorial(false); //Card historial se oculta en cualquier otro caso.
 
         if (accion === 'crear') {
+            setUbicacionCampo(undefined); //Al cerrar el ABM de Lote, que se dirija a la posicion general de cliente a traves de sus parametros, no la del campo seleccionado en el select(dibujo).
+            setUbicacionLote(undefined); //Elimina el dibujo del lote de solo visualizacion.
             setSwitchValue('NINGUNO');
             setMostrarABMCampo(true);
             setNuevoCampoLabel(true);
@@ -199,11 +219,10 @@ function TablaCampos() {
             setMostrarCampoSelec(true);
             setSwitchValue('LOTES')
             setCampo(fila);
-            // const campoSeleccionado = tableDataCampos.find((campo) => campo.key === fila.key);
-            // setTableDataLotes(campoSeleccionado.lotes);
-            //reloadDataLotes();
+     
+            setUbicacionCampo(JSON.parse(fila.geojson)); //dibujamos campo en rojo(no editable).
 
-            setAreaEditar(geojsonFormater(fila));
+            setIdCampoS(fila?.key)
             setReloadMap(!reloadMap);
         };
     };
@@ -275,6 +294,8 @@ function TablaCampos() {
         setMostrarCardHistorial(false); //Card historial se oculta en cualquier otro caso
 
         if (accion === 'crear') {
+            setUbicacionCampo(undefined); //Al cerrar el ABM de Lote, que se dirija a la posicion general de cliente a traves de sus parametros, no la del campo seleccionado en el select(dibujo).
+            setUbicacionLote(undefined); //Elimina el dibujo del lote de solo visualizacion.
             setCampo(undefined);
             setSwitchValue('NINGUNO');
             setMostrarABMLote(true);
@@ -301,13 +322,17 @@ function TablaCampos() {
             setAreaEditar(geojsonFormater(fila));
             setReloadMap(!reloadMap);
 
+            setUbicacionLote(undefined); //Elimina el dibujo del lote de solo visualizacion.
             setPolygonEdit(false); //deshabilita herramientas dibujar area.
+
+            //setMostrarCampoSelec(false);
         };
         if (accion === 'verDetalle') {
             setLote(fila);
             setMostrarCardHistorial(true);
 
-            setAreaEditar(geojsonFormater(fila));
+            //setAreaEditar(geojsonFormater(fila));
+            setUbicacionLote(JSON.parse(fila.geojson))
             setReloadMap(!reloadMap);
         };
     };
@@ -316,6 +341,10 @@ function TablaCampos() {
 
     //Switch
     const selectedOption = (e) => {
+        setUbicacionCampo(undefined); //Al cerrar el ABM de Lote, que se dirija a la posicion general de cliente a traves de sus parametros, no la del campo seleccionado en el select(dibujo).
+        setUbicacionLote(undefined); //Elimina el dibujo del lote de solo visualizacion.
+
+
         //Cada vez que cambiemos de opcion en el switch, vuelve a los datos originales de Campos y Lotes
         setMostrarCampoSelec(false);
         setMostrarABMCampo(false);
@@ -339,13 +368,11 @@ function TablaCampos() {
             // const campoSeleccionado = tableDataCampos.find((campo) => campo.key === 0);
             // setTableDataLotes(campoSeleccionado.lotes);
             setCampo(0)
-            //reloadDataLotes();
         };
     };
 
     const closeABMLote = () => {
 
-        setUbicacionCampo(undefined); //Al cerrar el ABM de Lote, que se dirija a la posicion general de cliente a traves de sus parametros, no la del campo seleccionado en el select.
         setReloadMap(!reloadMap);
         setAreaEditar(undefined);
         setLote(undefined); //Al presionar volver en campo seleccionado, eliminaria el que habia selecc.
@@ -385,13 +412,13 @@ function TablaCampos() {
             if (tipo === 'campo') selectedOption('CAMPOS');
             if (tipo === 'lote') closeABMLote();
             setGuardar(!guardar);
+            //setReloadMap(!reloadMap);
         }
 
     };
 
     const reloadDataLotes = () => {
-        //console.log(campo?.key)
-        //console.log(campo)
+
         const idCampo = campo?.key ? campo?.key : 0;
 
         const campoSeleccionado = tableDataCampos?.find((campoSelect) => campoSelect.key === idCampo);
@@ -410,7 +437,7 @@ function TablaCampos() {
             title: "CULTIVO",
             dataIndex: "cultivo",
             key: "cultivo",
-            align: "left"
+            align: "center"
         },
         {
             title: "CICLO",
@@ -433,19 +460,19 @@ function TablaCampos() {
             title: "ANTERIOR",
             dataIndex: "cultivoA",
             key: "cultivoA",
-            align: "left"
+            align: "center"
         },
         {
             title: "RINDE EST.",
             dataIndex: "rindeest",
             key: "rindeest",
-            align: "left"
+            align: "center"
         },
         {
             title: "COSTO EST.",
             dataIndex: "costoest",
             key: "costoest",
-            align: "left"
+            align: "center"
         }
         // {
         //     title: "...",
@@ -463,201 +490,241 @@ function TablaCampos() {
         // }
     ];
 
-    console.log(screenH)
+    const loadingIcon = (
+        <LoadingOutlined
+            style={{
+                fontSize: 40
+            }}
+            spin
+        />
+    );
+
 
     return (
-        <div className="tabla-main-wrapper">
+        <div className={loading ? "loading-spin" : "tabla-main-wrapper"}>
 
-            <h3 className="titulo-modulo" >CAMPOS</h3>
+            {loading ? <Spin spinning={true} indicator={loadingIcon} tip="Cargando" size="large"><div style={{ color: 'transparent' }}>Cargando...</div></Spin> :
+                <>
+                    <h3 className="titulo-modulo" >CAMPOS</h3>
 
-            <Row>
-                <Col xs={24} sm={12} md={10} className="filtros-contenedor">
+                    <Row>
+                        <Col xs={24} sm={12} md={10} className="filtros-contenedor">
 
 
-                    <Segmented className="switch" block options={['CAMPOS', 'LOTES']}
-                        onChange={selectedOption} value={switchValue} />
-
-                    <Tooltip title="Buscar por cualquiera de las columnas" placement="top" >
-                        <>
-                            <Input placeholder="Buscar..." className="buscador"
-                                suffix={
-                                    <SearchOutlined className="search-icon" />
+                            <Segmented className="switch" block options={[
+                                {
+                                    label: (
+                                        <div className='parent'>
+                                            <div style={{paddingRight: "3px"}} className="child">CAMPOS</div> 
+                                            <div className="child">({tableDataCampos?.filter((campo) => campo.key !== 0).length > 0 ? tableDataCampos?.filter((campo) => campo.key !== 0).length : 0})</div>
+                                        </div>
+                                    ),
+                                    value: 'CAMPOS',
+                                },
+                                {
+                                    label: (
+                                        <div className='parent'>
+                                            <div style={{paddingRight: "3px"}} className="child">LOTES</div> 
+                                            <div className="child">({tableDataLotes?.length > 0 ? tableDataLotes?.length : 0})</div>
+                                        </div>
+                                    ),
+                                    value: 'LOTES',
                                 }
-                                onChange={(e) => {
-                                    setSearchedText(e.target.value);
-                                }}
-                            />
-                        </>
-                    </Tooltip>
-                </Col>
-                <Col xs={24} sm={12} md={14} className="btn-agregar-contenedor">
+                            ]}
+                                onChange={selectedOption} value={switchValue} />
 
-                    <Button type="primary" className="btn-agregar" onClick={() => seleccionarCampo('btnNuevoCampo', 'crear')}>NUEVO CAMPO</Button>
-                    <Button type="primary" className="btn-agregar" onClick={() => seleccionarLote('btnNuevoLote', 'crear')}>NUEVO LOTE</Button>
 
-                </Col>
-            </Row>
-            {/* aca podemos probar con un Space para separar las tablas (que seria tabla y mapa) */}
 
-            <Row className="tabla-mapa-contenedor" style={{ paddingBottom:"8px", paddingTop:"8px" }}>
+                            <Tooltip title="Buscar por cualquiera de las columnas" placement="top" >
+                                <>
+                                    <Input placeholder="Buscar..." className="buscador"
+                                        suffix={
+                                            <SearchOutlined className="search-icon" />
+                                        }
+                                        onChange={(e) => {
+                                            setSearchedText(e.target.value);
+                                        }}
+                                    />
+                                </>
+                            </Tooltip>
+                        </Col>
+                        <Col xs={24} sm={12} md={14} className="btn-agregar-contenedor">
 
-                <Col xs={24} sm={24} md={10} >
+                            <Button type="primary" className="btn-agregar" onClick={() => seleccionarCampo('btnNuevoCampo', 'crear')}>NUEVO CAMPO</Button>
+                            <Button type="primary" className="btn-agregar" onClick={() => seleccionarLote('btnNuevoLote', 'crear')}>NUEVO LOTE</Button>
 
-                    {mostrarCampoSelec ? <Card
-                        title={campo?.nombreCampo}
-                        bordered={true}
-                        extra={<ArrowLeftOutlined onClick={() => selectedOption('CAMPOS')} />}
-                        className="campo-card-show"
-                    >
-                        <>
-                            <Row style={{ marginBottom: "20px" }}>
-                                <Col xs={24} sm={24} md={24} >
-                                    <div><b>Cliente: </b>{campo?.nombreCliente}</div>
-                                </Col>
-                                {/* <Col xs={24} sm={12} md={12} >
+                        </Col>
+                    </Row>
+                    {/* aca podemos probar con un Space para separar las tablas (que seria tabla y mapa) */}
+
+                    <Row className="tabla-mapa-contenedor" style={{ paddingBottom: "8px", paddingTop: "8px" }}>
+
+                        <Col xs={24} sm={24} md={10} >
+
+                            {mostrarCampoSelec ? <Card
+                                title={campo?.nombreCampo}
+                                bordered={true}
+                                extra={<ArrowLeftOutlined onClick={() => selectedOption('CAMPOS')} />}
+                                className="campo-card-show"
+                            >
+                                <>
+                                    <Row style={{ marginBottom: "20px" }}>
+                                        <Col xs={24} sm={24} md={24} >
+                                            <div><b>Cliente: </b>{campo?.nombreCliente}</div>
+                                        </Col>
+                                        {/* <Col xs={24} sm={12} md={12} >
                                     <div><b>KMs a planta: </b>{campo?.kmsplanta}</div>
                                 </Col> */}
-                            </Row>
-                            <Row>
-                                <Col xs={24} sm={24} md={24} >
-                                    <div><b>Descripción: </b>{campo?.descripcion}</div>
-                                </Col>
-                            </Row>
-                        </>
-                    </Card> : ''}
+                                    </Row>
+                                    <Row>
+                                        <Col xs={24} sm={24} md={24} >
+                                            <div><b>Descripción: </b>{campo?.descripcion}</div>
+                                        </Col>
+                                    </Row>
+                                </>
+                            </Card> : ''}
 
 
 
-                    {switchValue === 'LOTES' & !mostrarCampoSelec ? <Card
-                        title="Lotes sin campo asignado"
-                        bordered={true}
-                        bodyStyle={{ padding: '0px' }}
+                            {switchValue === 'LOTES' & !mostrarCampoSelec ? <Card
+                                title="Lotes sin campo asignado"
+                                bordered={true}
+                                bodyStyle={{ padding: '0px' }}
 
-                    >
-                    </Card> : ''}
-
-
-
-                    {switchValue === 'CAMPOS' ? <Table
-                        className={mostrarCampoSelec === false && "tabla-campos-switch-animation"}
-                        size={"small"}
-                        dataSource={tableDataCampos?.filter((campo) => campo.key !== 0)} //Elimino la ultima fila, ya que es la de idCampo = 0, no es un campo, son los lotes sin campo.
-                        columns={columnsCampos}
-                        pagination={{
-                            position: ["none", "bottomRight"],
-                            showSizeChanger: false
-                        }}
-                    /> : ''}
-
-                    {switchValue === 'LOTES' ? <Table
-                        className={mostrarCampoSelec & switchValue === 'LOTES' ? "tabla-lotes-link-animation" : "tabla-lotes-switch-animation"}
-                        size={"small"}
-                        dataSource={tableDataLotes}
-                        columns={columnsLotes}
-                        pagination={{
-                            position: ["none", "bottomRight"],
-                            showSizeChanger: false
-                        }}
-                    /> : ''}
-
-
-                    {/* Agregar/Editar CAMPO */}
-                    {mostrarABMCampo ? <Card
-                        title={nuevoCampoLabel ? "NUEVO CAMPO" : "EDITAR CAMPO"}
-                        bordered={true}
-                        extra={<CloseOutlined onClick={() => selectedOption('CAMPOS')} />}
-                        className={mostrarCampoSelec === false && "tabla-campos-switch-animation"}
-
-                    >
-                        <FormCampos editarCampoValues={campo} cancelar={selectedOption} notificacion={accionGuardarABM} />
-                    </Card> : ''}
+                            >
+                            </Card> : ''}
 
 
 
+                            {switchValue === 'CAMPOS' ? <Table
+                                className={mostrarCampoSelec === false && "tabla-campos-switch-animation"}
+                                size={"small"}
+                                dataSource={tableDataCampos?.filter((campo) => campo.key !== 0)} //Elimino la ultima fila, ya que es la de idCampo = 0, no es un campo, son los lotes sin campo.
+                                columns={columnsCampos}
+                                pagination={{
+                                    position: ["none", "bottomRight"],
+                                    showSizeChanger: false
+                                }}
+                            /> : ''}
 
-                    {/* Agregar/Editar LOTE */}
-                    {mostrarABMLote ? <Card
-                        title={nuevoLoteLabel ? "NUEVO LOTE" : "EDITAR LOTE"}
-                        bordered={true}
-                        extra={<CloseOutlined onClick={closeABMLote} />}
-                        className={"tabla-lotes-switch-animation"}
-                    >
-                        <FormLotes editarLoteValues={lote} cancelar={closeABMLote} notificacion={accionGuardarABM} dataCampos={tableDataCampos} />
-                    </Card> : ''}
-
-                </Col>
-
-
-                <Col xs={24} sm={24} md={13} >
-                    <Mapa editarArea={areaEditar} />
+                            {switchValue === 'LOTES' ? <Table
+                                className={mostrarCampoSelec & switchValue === 'LOTES' ? "tabla-lotes-link-animation" : "tabla-lotes-switch-animation"}
+                                size={"small"}
+                                dataSource={tableDataLotes}
+                                columns={columnsLotes}
+                                pagination={{
+                                    position: ["none", "bottomRight"],
+                                    showSizeChanger: false,
+                                    defaultPageSize: mostrarCampoSelec ? 5 : 8
+                                }}
+                            /> : ''}
 
 
-                    <div className="area-calculada-contenedor" >
-                        {mostrarABMCampo || mostrarABMLote ? <Card
-                            bordered={true}
-                            className="card-area-calculada"
-                            bodyStyle={{ padding: '0 8px 8px 8px' }}
-                        >
-                            <p className="card-nombre-contenedor">
-                                {campo?.nombreCampo}
-                            </p>
+                            {/* Agregar/Editar CAMPO */}
+                            {mostrarABMCampo ? <Card
+                                title={nuevoCampoLabel ? "NUEVO CAMPO" : "EDITAR CAMPO"}
+                                bordered={true}
+                                extra={<CloseOutlined onClick={() => selectedOption('CAMPOS')} />}
+                                className={mostrarCampoSelec === false && "tabla-campos-switch-animation"}
 
-                            <p style={{ textAlign: "center", margin: "0px" }}>Área de {mostrarABMCampo ? 'campo' : 'lote'} calculada:</p>
+                            >
+                                <FormCampos editarCampoValues={campo} cancelar={selectedOption} notificacion={accionGuardarABM} />
+                            </Card> : ''}
 
-                            <h4 style={{ textAlign: "center", margin: "16px 0px", fontWeight: "700", fontSize: "1.1rem" }}>{areaMapa ?? areaMapa} Has.</h4>
 
-                            {/* <div style={{ textAlign: "center", display: "flex", justifyContent: "space-around" }}>
+
+
+                            {/* Agregar/Editar LOTE */}
+                            {mostrarABMLote ? <Card
+                                title={nuevoLoteLabel ? "NUEVO LOTE" : "EDITAR LOTE"}
+                                bordered={true}
+                                extra={<CloseOutlined onClick={closeABMLote} />}
+                                className={"tabla-lotes-switch-animation"}
+                            >
+                                <FormLotes editarLoteValues={lote} cancelar={closeABMLote} notificacion={accionGuardarABM} dataCampos={tableDataCampos} />
+                            </Card> : ''}
+
+                        </Col>
+
+
+                        <Col xs={24} sm={24} md={13} >
+                            <Mapa editarArea={areaEditar} dataCamposLotes={tableDataCampos} />
+
+
+                            <div className="area-calculada-contenedor" >
+                                {mostrarABMCampo || mostrarABMLote ? <Card
+                                    bordered={true}
+                                    className="card-area-calculada"
+                                    bodyStyle={{ padding: '0 8px 8px 8px' }}
+                                >
+                                    <p className="card-nombre-contenedor">
+                                        {campo?.nombreCampo}
+                                    </p>
+
+                                    <p style={{ textAlign: "center", margin: "0px" }}>Área de {mostrarABMCampo ? 'campo' : 'lote'} calculada:</p>
+
+                                    <h4 style={{ textAlign: "center", margin: "16px 0px", fontWeight: "700", fontSize: "1.1rem" }}>{areaMapa ?? areaMapa} Has.</h4>
+
+                                    {/* <div style={{ textAlign: "center", display: "flex", justifyContent: "space-around" }}>
                             <Button type="primary" danger style={{ borderRadius: "2px" }}>Cancelar</Button>
 
                             <Button type="primary" style={{ borderRadius: "2px" }} >Guardar</Button>
                         </div> */}
 
-                        </Card> : ''}
-                    </div>
+                                </Card> : ''}
+                            </div>
 
 
 
-                    {mostrarCardHistorial ? <div className="card-historialLote-contenedor">
-                        {/* Modal historial lote */}
-                        <Card
-                            title={
-                                <div className="contenedor-titulo-modal">
-                                    <div className="lote-historial-modal">
-                                        <HistoryOutlined style={{ paddingRight: "5px" }} /> {lote?.nombreLote}</div>
-                                </div>
-                            }
+                            {mostrarCardHistorial ? <div className="card-historialLote-contenedor">
+                                {/* Modal historial lote */}
+                                <Card
+                                    title={
+                                        <div className="contenedor-titulo-modal">
+                                            <div className="lote-historial-modal">
+                                                <HistoryOutlined style={{ paddingRight: "5px" }} /> {lote?.nombreLote}</div>
+                                        </div>
+                                    }
 
-                            size="small"
-                            bodyStyle={{ padding: '0px 8px 0px 8px' }}
+                                    size="small"
+                                    bodyStyle={{ padding: '0px 8px' }}
+                                    headStyle={{ padding: '0px 8px' }}
 
-                        >
+                                >
 
-                            <Row>
-                                <Col xs={24} sm={24} md={24} >
+                                    <Row>
+                                        <Col xs={24} sm={24} md={24} >
 
-                                    <Table
-                                        size={"small"}
-                                        dataSource={historialLotes?.filter((loteh) => loteh.idLote === lote?.key)}
-                                        columns={columnsHistorialLote}
-                                        pagination={{
-                                            position: ["none", "bottomRight"],
-                                            showSizeChanger: false,
-                                            defaultPageSize: 2,
-                                            size: "small",
-                                            style: { margin: "8px 0px 8px 0px" }
-                                        }}
-                                    />
+                                            {/* { historialLotes?.filter((loteh) => loteh.idLote === lote?.key).length > 0 ? "" : <h4 style={{textAlign: "center"}}>
+                                        NO HAY DATOS 
+                                    </h4>} */}
 
-                                </Col>
-                            </Row>
+                                            <Table
+                                                id="tablaHistorial"
+                                                // style={historialLotes?.filter((loteh) => loteh.idLote === lote?.key).length > 0 ? {} : {maxHeight:"145px"}}
+                                                size='small'
+                                                dataSource={historialLotes?.filter((loteh) => loteh.idLote === lote?.key)}
+                                                columns={columnsHistorialLote}
+                                                pagination={{
+                                                    position: ["none", "bottomRight"],
+                                                    showSizeChanger: false,
+                                                    defaultPageSize: 2,
+                                                    size: "small",
+                                                    style: { margin: "2px 0px 2px 0px" }
+                                                }}
+                                            />
 
-                        </Card>
-                    </div> : ''}
+                                        </Col>
+                                    </Row>
 
-                </Col>
+                                </Card>
+                            </div> : ''}
 
-            </Row>
+                        </Col>
 
+                    </Row>
+                </>
+            }
 
         </div>
     )

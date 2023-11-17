@@ -10,7 +10,7 @@ import "./Mapa.css";
 import mapboxgl from "!mapbox-gl";
 
 
-const Mapa = ({ editarArea }) => {
+const Mapa = ({ editarArea, dataCamposLotes }) => {
 
 
   const MAPBOXTOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
@@ -19,7 +19,7 @@ const Mapa = ({ editarArea }) => {
   const mapDiv = useRef(null);
   const [clienteParams, setClienteParams] = useState();
 
-  const { setAreaMapa, polygonEdit, reloadMap, setGeojson, ubicacionCampo, setUbicacionCampo } = useContext(GlobalContext);
+  const { setAreaMapa, polygonEdit, reloadMap, setGeojson, ubicacionCampo, ubicacionLote, idCampoS, setIdCampoS } = useContext(GlobalContext);
 
 
   useEffect(() => {
@@ -34,7 +34,6 @@ const Mapa = ({ editarArea }) => {
     //console.log(jsonData)
   };
 
-  //clienteParams ? console.log(clienteParams[0].coordinates) : console.log('aaaa')
 
   useEffect(() => {
     mapboxgl.accessToken = MAPBOXTOKEN;
@@ -54,8 +53,6 @@ const Mapa = ({ editarArea }) => {
     map.addControl(new PitchToggle({ minpitchzoom: 14 }), "top-right");
 
 
-
-
     //Funcion que marca con poligonos y colorea una zona del mapa
     map.on("load", () => {
       setMap(map);
@@ -73,10 +70,10 @@ const Mapa = ({ editarArea }) => {
 
 
       if (editarArea) {
-        //console.log('ENTRE EN if(editarArea) {')
+
         map.addControl(draw);
 
-        draw.add(editarArea); //Esto me permite setear un draw, es decir lo voy a usar para la funcionalidad de editar, NECESITA CIERTO FORMATO. Las has al modificar, van a mostrarse en un principio por la res del backend que las contenga, aunque aun no existe dicha col en la base, preguntar.
+        draw.add(editarArea); //Esto permite setear un draw, es decir lo voy a usar para la funcionalidad de editar, NECESITA CIERTO FORMATO. Las has al modificar, van a mostrarse en un principio por la res del backend que las contenga, aunque aun no existe dicha col en la base, preguntar.
 
         updateArea(); //Esto ejecuta la funcion que calcula el area del polygon apenas empieza la app, asi se muestra en el modal de la esquina inferior izq, ya que no esta almecenada en el la base de datos. En el caso de LOTES si esta alamecenada y ahi si vamos a mostrar la que viene en la respuesta del backend.
 
@@ -85,22 +82,19 @@ const Mapa = ({ editarArea }) => {
       };
 
       if (!editarArea) {
-        //console.log('ENTRE EN if(!editarArea) {')
+
         map.addControl(draw);
         if (polygonEdit === false) {
-          //console.log('ENTRE EN if polygonEdit === false')
+
           //Ocultar botones crear y eliminar polygon
           showHideBtnsMapa();
         }
-
       };
 
 
-
       if (ubicacionCampo) {
-
         //Marcamos el area del Campo al cual pertenece el lote, para guiar al usuario.
-        map.addSource("idSource", {
+        map.addSource("idSourceCampo", {
           type: "geojson",
           data: {
             type: "FeatureCollection",
@@ -120,14 +114,104 @@ const Mapa = ({ editarArea }) => {
         });
 
         map.addLayer({
-          id: "idLayerLine",
+          id: "idLayerLineCampo",
           type: "line",
-          source: "idSource",
+          source: "idSourceCampo",
           paint: {
-            "line-color": "red",
-            "line-width": 2,
+            "line-color": "#56b43c",
+            "line-width": 4,
           },
         });
+
+        //Si no hay un lote seleccionado para visualizar, centramos en el campo seleccionado. 
+        let polygon = turf.polygon([ubicacionCampo]);
+        let centroid = turf.centroid(polygon);
+        if (!ubicacionLote & !editarArea) map.flyTo({ center: centroid.geometry.coordinates, zoom: 13 });
+
+
+        //Muestra en el mapa, todos los lotes del campo seleccionado.
+        const lotesDelCampo = dataCamposLotes?.filter((campo) => campo.key == idCampoS)
+
+        if (lotesDelCampo[0].lotes) {
+          lotesDelCampo[0].lotes.forEach(lote => {
+            map.addSource("idSourceCampo" + `${lote?.key}`, {
+              type: "geojson",
+              data: {
+                type: "FeatureCollection",
+                features: [
+                  {
+                    type: "Feature",
+                    properties: {},
+                    geometry: {
+                      coordinates: [
+                        JSON.parse(lote?.geojson),
+                      ],
+                      type: "Polygon",
+                    },
+                  },
+                ],
+              },
+            });
+
+            map.addLayer({
+              id: "idLayerLineCampo" + `${lote?.key}`,
+              type: "line",
+              source: "idSourceCampo" + `${lote?.key}`,
+              paint: {
+                "line-color": "skyblue",
+                "line-width": 3,
+              },
+            });
+          });
+        }
+
+      };
+
+      if (ubicacionLote) {
+        //Marcamos el area del Lote en su modo solo viusalizacion (no editable).
+
+        map.addSource("idSourceLote", {
+          type: "geojson",
+          data: {
+            type: "FeatureCollection",
+            features: [
+              {
+                type: "Feature",
+                properties: {},
+                geometry: {
+                  coordinates: [
+                    ubicacionLote,
+                  ],
+                  type: "Polygon",
+                },
+              },
+            ],
+          },
+        });
+
+        map.addLayer({
+          id: "idLayerFillLote",
+          type: "fill",
+          source: "idSourceLote",
+          paint: {
+            "fill-color": "rgba(135, 207, 235, 0.4)",
+          },
+        });
+
+        map.addLayer({
+          id: "idLayerLineLote",
+          type: "line",
+          source: "idSourceLote",
+          paint: {
+            "line-color": "skyblue",
+            "line-width": 3,
+          },
+        });
+
+        //Centramos en el lote seleccionado. 
+        let polygon = turf.polygon([ubicacionLote]);
+        let centroid = turf.centroid(polygon);
+        map.flyTo({ center: centroid.geometry.coordinates, zoom: 13 });
 
       };
 
@@ -139,7 +223,7 @@ const Mapa = ({ editarArea }) => {
 
       function updateArea(e) {
         const data = draw.getAll();
-        // const answer = document.getElementById('calculated-area');
+
         if (data.features.length > 0) {
           let area = turf.area(data);
           // Conversion a has.
@@ -148,14 +232,11 @@ const Mapa = ({ editarArea }) => {
           //console.log(e?.features[0].geometry.coordinates[0]) //coordenadas al modificar mi polygon en editar lote, si no estoy editando, traigo las coordenadas de la base, ya que no varia.
           setAreaMapa(has);
         } else {
-          // answer.innerHTML = '';
+
           if (e.type !== 'draw.delete')
             alert('Click the map to draw a polygon.');
         }
       }
-      //Calcular area del poligono.
-
-
 
     });
     //fin Funcion map.on("load").
@@ -163,23 +244,12 @@ const Mapa = ({ editarArea }) => {
 
     //POSICION RELACIONADA A SELECCION (ya seleccionado Campo o Lote)
     if (editarArea) {
-
       // centrado de viewport con turf (Esto hace que el mapa de mueva al lugar que queramos.)
-      const geojsonBounds = turf.bbox({
-        type: "FeatureCollection",
-        features: [
-          { //Esta entra en accion cuando elejimos el icono parecido a GoogleMaps y marcar un punto.
-            type: "Feature",
-            properties: {},
-            geometry: {
-              type: "Point", //IMPORTANTE
-              coordinates: editarArea?.geometry.coordinates[0][0],
-            },
-          }
-        ],
-      });
 
-      map.fitBounds(geojsonBounds, { padding: 10, zoom: 13 });
+      //Si no hay un lote seleccionado para visualizar, centramos en el campo seleccionado. 
+      let polygon = turf.polygon(editarArea.geometry.coordinates);
+      let centroid = turf.centroid(polygon);
+      map.flyTo({ center: centroid.geometry.coordinates, zoom: 13 });
 
     };
 
@@ -187,30 +257,13 @@ const Mapa = ({ editarArea }) => {
     //POSICION GENERICA (previo a seleccionar Campo o Lote)
     // centrado de viewport con turf (Esto hace que el mapa se mueva al lugar que queramos). 
     if (!editarArea) {
-      const geojsonBoundsGenerico = turf.bbox({
-        type: "FeatureCollection",
-        features: [
-          { //Esta entra en accion cuando elejimos el icono parecido a GoogleMaps y marcar un punto.
-            type: "Feature",
-            properties: {},
-            geometry: {
-              type: "Point", //IMPORTANTE
-              // coordinates: [
-              //   -62.67741539,
-              //   -31.8276833
-              // ]
-              coordinates: ubicacionCampo ? ubicacionCampo[0] : clienteParams ? JSON.parse(clienteParams[0].coordinates) : [
-                -62.67741539, -31.8276833],
-            },
-          }
-        ],
-      });
 
-      map.fitBounds(geojsonBoundsGenerico, { padding: 10, zoom: clienteParams ? 11 : 4 });
-      //setUbicacionCampo(undefined); //despues de dirigirse a la ubicacion del campo seleccionado, se limpia.
+      if (!ubicacionCampo & !ubicacionLote) {
 
-    }
+        map.flyTo({ center: clienteParams ? JSON.parse(clienteParams[0].coordinates) : [-62.67741539, -31.8276833], zoom: clienteParams ? 13 : 4 });
+      }
 
+    };
 
     // geometria dibujada al CREAR
     map.on("draw.create", (e) => {
@@ -231,10 +284,7 @@ const Mapa = ({ editarArea }) => {
       setGeojson(undefined);
     });
 
-
-
-  }, [reloadMap]);
-
+  }, [reloadMap, dataCamposLotes]);
 
 
   const showHideBtnsMapa = () => {
@@ -249,7 +299,6 @@ const Mapa = ({ editarArea }) => {
       trashIcon[i].style.display = 'none';
     };
   };
-
 
 
   return (

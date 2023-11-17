@@ -70,7 +70,7 @@ function FormCampos({ editarCampoValues, cancelar, notificacion }) {
                 idEstado: 1
             });
             setCampo(prev => ({ ...prev, idEstado: 1 }))
-            //console.log('ENTRE EN NUEVO CAMPO')
+
 
             //El geojson del campo se limpia
             setGeojson(undefined);
@@ -89,7 +89,6 @@ function FormCampos({ editarCampoValues, cancelar, notificacion }) {
 
 
     const crearCampo = async () => {
-        //console.log(campo)
 
         const data = new FormData();
         data.append("nombreCampo", campo.nombreCampo);
@@ -119,10 +118,6 @@ function FormCampos({ editarCampoValues, cancelar, notificacion }) {
 
     //Funcion que MODIFICA campo
     const editarCampo = async (values) => {
-        //console.log('Tratando de editar campo');
-        // console.log(editarCampoValues.key)
-        //console.log(values)
-        //console.log(geojson)
 
 
         const data = new FormData();
@@ -270,7 +265,7 @@ function FormCampos({ editarCampoValues, cancelar, notificacion }) {
                                 required: false,
                                 // message: "Ingrese una descripcion"
                             }]}>
-                            <TextArea rows={4} name="descripcion" onChange={handleChange} />
+                            <TextArea rows={4} name="descripcion" onChange={handleChange} maxLength={254} />
                         </FormItem>
                     </Col>
 

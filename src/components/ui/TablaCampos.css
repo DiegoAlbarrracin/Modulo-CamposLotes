@@ -39,11 +39,11 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
         "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
         sans-serif;
-    font-weight: 400;
+    font-weight: 700;
     font-size: 14px;
-    padding-left: 10px;
-    display: flex;
-    align-items: center;
+    padding-left: 8px;
+    color: #605d5f !important;
+    margin-top: 4px;
 }
 
 .icon-color {
@@ -131,4 +131,29 @@
         sans-serif;
     font-weight: 500;
     cursor: default;
+}
+
+/*Spin de carga*/
+.loading-spin {
+  position: absolute;
+  top: 20%;
+  left: 50%;
+}
+
+.ant-card .ant-card-head {
+    min-height: 36px;
+}
+
+.ant-card .ant-card-body {
+    padding-top: 12px;
+    padding-bottom: 12px;
+}
+
+.parent {
+    text-align: center;
+    min-width: 100px;
+}
+.child {
+    display: inline-block;
+    vertical-align: middle;
 }

@@ -10,6 +10,6 @@ ruta="$2"
 
 cd build
 
-comando_scp="scp -r * root@$ip:/var/www/html/duod/$ruta"
+comando_scp="scp -r * root@$ip:/var/www/html/duoc/$ruta"
 
 eval "$comando_scp"

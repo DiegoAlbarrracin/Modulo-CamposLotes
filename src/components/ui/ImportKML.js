@@ -4,6 +4,7 @@ import { Upload, App,  Row, Col, Segmented } from 'antd';
 import { geojsonFormater } from "../../util/geojsonFormater";
 import { TbPolygon } from "react-icons/tb";
 import { GlobalContext } from "../context/GlobalContext";
+import './FormLotes.css';
 
 
 function ImportKML() {
@@ -24,7 +25,6 @@ function ImportKML() {
         accept: '.kml',
         beforeUpload(file) {
             
-            //console.log(file)
             if (!file.name.toLowerCase().endsWith(".kml")) {
                 console.log("Por favor, selecciona un archivo con extensión .kml");
                 message.error("Ingrese unicamente archivos .kml");
@@ -47,7 +47,6 @@ function ImportKML() {
                     return [longitude, latitude];
                 });
 
-                //console.log(JSON.stringify(coordinatesArray)) //geojson extraido del xml.
                 setGeojson(JSON.stringify(coordinatesArray)); //seteamos el geojson extraido del kml importado.
 
                 setAreaEditar(geojsonFormater(JSON.stringify(coordinatesArray))); //Una vez cargue el archivo, marcaremos el polygon en el mapa.
@@ -97,7 +96,7 @@ function ImportKML() {
 
     return (
         <>
-            <Row style={{ display: "flex", justifyContent: "center", marginTop: "20px", marginBottom: "8px" }}>
+            <Row style={{ display: "flex", justifyContent: "center", marginBottom: "8px" }}>
 
                 <Segmented
                     onChange={selectedOption}
@@ -120,17 +119,17 @@ function ImportKML() {
             </Row>
 
 
-            {showUpload ? <Row style={{marginBottom:"50px"}}>
+            {showUpload ? <Row style={{marginBottom:"8px"}}>
 
                 <Col xs={24} sm={24} md={24}>
 
                         <Dragger {...props}
                         disabled= {disableImport}>
-                            <p className="ant-upload-drag-icon">
+                            <p className="ant-upload-drag-icon" style={{margin: '0'}}>
                                 <InboxOutlined />
                             </p>
-                            <p className="ant-upload-text">Haga click o arrastre un archivo aquí</p>
-                            <p className="ant-upload-hint">
+                            <p className="ant-upload-text" style={{fontSize:'14px'}}>Haga click o arrastre un archivo aquí</p>
+                            <p className="ant-upload-hint" style={{fontSize:'13px', margin: '0'}}>
                                 Ingrese un archivo .kml
                             </p>
                         </Dragger>

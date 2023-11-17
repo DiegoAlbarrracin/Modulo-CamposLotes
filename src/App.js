@@ -26,13 +26,18 @@ function App() {
 
   //FormLote - FormLote accion: onChange select campo
   const [ubicacionCampo, setUbicacionCampo] = useState();
+  //FormLote - FormLote accion: verDetalle
+  const [ubicacionLote, setUbicacionLote] = useState();
+  //Todos los lotes de un campo
+  const [idCampoS, setIdCampoS] = useState();
+
 
 
 
 
 
   return (
-    <GlobalContext.Provider value={{ areaMapa, setAreaMapa, polygonEdit, setPolygonEdit, reloadMap, setReloadMap, geojson, setGeojson, guardar, setGuardar, ubicacionCampo, setUbicacionCampo, areaEditar, setAreaEditar, newLote, setNewLote }}>
+    <GlobalContext.Provider value={{ areaMapa, setAreaMapa, polygonEdit, setPolygonEdit, reloadMap, setReloadMap, geojson, setGeojson, guardar, setGuardar, ubicacionCampo, setUbicacionCampo, ubicacionLote, setUbicacionLote, areaEditar, setAreaEditar, newLote, setNewLote, idCampoS, setIdCampoS }}>
       <ConfigProvider
         locale={esES}
         theme={{

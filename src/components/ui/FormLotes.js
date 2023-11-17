@@ -18,7 +18,7 @@ function FormLotes({ editarLoteValues, cancelar, notificacion, dataCampos }) {
     const URL = process.env.REACT_APP_URL;
     const formRef = useRef(null);
     const { Dragger } = Upload;
-    const { geojson, setGeojson, areaMapa, reloadMap, setReloadMap, setUbicacionCampo } = useContext(GlobalContext);
+    const { geojson, setGeojson, areaMapa, reloadMap, setReloadMap, setUbicacionCampo, setIdCampoS } = useContext(GlobalContext);
     const idUserLogged = localStorage.getItem("usuario");
     const [dataClientes, setDataClientes] = useState([]);
     const [optionsCampos, setoptionsCampos] = useState();
@@ -63,6 +63,7 @@ function FormLotes({ editarLoteValues, cancelar, notificacion, dataCampos }) {
             if ( editarLoteValues.idCampo > 0) { //Siempre y cuando no sea 'SIN CAMPO'
                 const ubiCampo = dataCampos?.find((campo) => campo.key === editarLoteValues.idCampo);
                 setUbicacionCampo(JSON.parse(ubiCampo.geojson))
+                setIdCampoS(editarLoteValues.idCampo)
                 setReloadMap(!reloadMap);
             }
         }
@@ -76,12 +77,11 @@ function FormLotes({ editarLoteValues, cancelar, notificacion, dataCampos }) {
                 idCondicion: 1
             });
             setLote(prev => ({ ...prev, idCampo: 0, idCondicion: 1 }))
-            //console.log('ENTRE EN NUEVO LOTE')
 
             //El geojson del lote se limpia
             setGeojson(undefined);
         }
-        // console.log(editarLoteValues)
+
         fetchOptionsCampo();
         fetchDataClientesxUser();
 
@@ -95,9 +95,6 @@ function FormLotes({ editarLoteValues, cancelar, notificacion, dataCampos }) {
 
 
     const crearLote = async () => {
-        //console.log(lote)
-        console.log(geojson)
-
 
         const data = new FormData();
         data.append("nombreLote", lote.nombreLote);
@@ -128,10 +125,6 @@ function FormLotes({ editarLoteValues, cancelar, notificacion, dataCampos }) {
 
     //Funcion que MODIFICA lote
     const editarLote = async (values) => {
-        // console.log('Tratando de editar lote');
-        // console.log(values)
-        // console.log(editarLoteValues)
-        // console.log(geojson)
 
         const data = new FormData();
         data.append("idLote", editarLoteValues.key);
@@ -182,9 +175,11 @@ function FormLotes({ editarLoteValues, cancelar, notificacion, dataCampos }) {
         if (e > 0) { //Siempre y cuando no sea 'SIN CAMPO'
             const ubiCampo = dataCampos?.find((campo) => campo.key === e);
             setUbicacionCampo(JSON.parse(ubiCampo.geojson))
+            setIdCampoS(e)
             setReloadMap(!reloadMap);
         }else{ //en caso de ser 0 la seleccion (sin campo), limpiamos el mapa.
             setUbicacionCampo(undefined)
+            setIdCampoS(undefined)
             setReloadMap(!reloadMap);
         }
 
