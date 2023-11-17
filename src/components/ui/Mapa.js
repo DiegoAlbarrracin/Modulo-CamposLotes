@@ -10,7 +10,7 @@ import "./Mapa.css";
 import mapboxgl from "!mapbox-gl";
 
 
-const Mapa = ({ editarArea, dataCamposLotes }) => {
+const Mapa = ({ editarArea, dataCamposLotes, editarLoteValues }) => {
 
 
   const MAPBOXTOKEN = process.env.REACT_APP_MAPBOX_TOKEN;
@@ -66,6 +66,61 @@ const Mapa = ({ editarArea, dataCamposLotes }) => {
           trash: polygonEdit,
           //point: polygonEdit,
         },
+        styles: [
+          {
+            id: 'gl-draw-line-static',
+            type: 'line',
+            // filter: ['all', ['==', 'mode', 'static'],
+            // ['==', '$type', 'LineString']
+            // ],
+            layout: {
+            'line-cap': 'round',
+            'line-join': 'round'
+            },
+            paint: {
+            'line-color': 'skyblue',
+            'line-width': 3
+            }
+            },
+        
+          {
+              'id': 'gl-draw-polygon-fill-inactive',
+              'type': 'fill',
+              // 'filter': ['all', ['==', 'active', 'false'],
+              //     ['==', '$type', 'Polygon'],
+              //     ['!=', 'mode', 'static']
+              // ],
+              'paint': {
+                  'fill-color': 'skyblue',
+                  //'fill-outline-color': '#fbb03b',
+                  'fill-opacity': 0.4
+              }
+          },
+          {
+              'id': 'gl-draw-polygon-fill-active',
+              'type': 'fill',
+              'filter': ['all', ['==', 'active', 'true'],
+                  ['==', '$type', 'Polygon']
+              ],
+              'paint': {
+                'fill-color': 'skyblue',
+                'fill-outline-color': '#fbb03b',
+                'fill-opacity': 0.5
+            }
+          },
+          {
+            'id': 'gl-draw-polygon-and-line-vertex-inactive',
+            'type': 'circle',
+            // 'filter': ['all', ['==', 'meta', 'vertex'],
+            //     ['==', '$type', 'Point'],
+            //     ['!=', 'mode', 'static']
+            // ],
+            'paint': {
+                'circle-radius': 4,
+                'circle-color': '#fbb03b'
+            }
+        },
+        ]
       });
 
 
@@ -129,11 +184,18 @@ const Mapa = ({ editarArea, dataCamposLotes }) => {
         if (!ubicacionLote & !editarArea) map.flyTo({ center: centroid.geometry.coordinates, zoom: 13 });
 
 
-        //Muestra en el mapa, todos los lotes del campo seleccionado.
-        const lotesDelCampo = dataCamposLotes?.filter((campo) => campo.key == idCampoS)
+        //Muestra en el mapa, todos los lotes del campo seleccionado, salvo cuando se desee editar un lote, no se agregara su layer, sino que el propio draw lo marcara.
+        console.log('dataCamposLotes',dataCamposLotes)
+        //console.log('editarLoteValues',editarLoteValues.key)
 
-        if (lotesDelCampo[0].lotes) {
-          lotesDelCampo[0].lotes.forEach(lote => {
+        const campoMostrar = dataCamposLotes?.filter((campo) => campo.key == idCampoS);
+        console.log('campoMostrar',campoMostrar[0].lotes)
+
+        const lotesDelCampo = editarLoteValues ? campoMostrar[0].lotes?.filter((lote) => lote.key != editarLoteValues?.key) : campoMostrar[0].lotes;
+
+
+        if (lotesDelCampo) {
+          lotesDelCampo.forEach(lote => {
             map.addSource("idSourceCampo" + `${lote?.key}`, {
               type: "geojson",
               data: {

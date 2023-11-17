@@ -231,6 +231,25 @@ function TablaCampos() {
     //Lotes
     const columnsLotes = [
         {
+            title: "CUENTA",
+            dataIndex: "nombreCliente",
+            key: "nombreCliente",
+            align: "left",
+            sorter: {
+                compare: (a, b) => a.nombreCliente?.localeCompare(b.nombreCliente),
+            },
+            defaultSortOrder: 'ascend',
+            ellipsis: true,
+            // onFilter: (value, record) => {
+            //     return String(record.nombreCliente).toUpperCase().trim().includes(value.toUpperCase().trim()) ||
+            //         String(record.nombreCampo).toUpperCase().trim().includes(value.toUpperCase().trim()) ||
+            //         String(record.acopio).toUpperCase().trim().includes(value.toUpperCase().trim()) ||
+            //         String(record.kmsplanta).toUpperCase().trim().includes(value.toUpperCase().trim()) ||
+            //         String(record.planta).toUpperCase().trim().includes(value.toUpperCase().trim());
+            // },
+            // filteredValue: [searchedText]
+        },
+        {
             title: "NOMBRE",
             dataIndex: "nombreLote",
             key: "nombreLote",
@@ -241,7 +260,8 @@ function TablaCampos() {
                 return String(record.nombreLote).toUpperCase().trim().includes(value.toUpperCase().trim()) ||
                     String(record.has).toUpperCase().trim().includes(value.toUpperCase().trim())
             },
-            filteredValue: [searchedText]
+            filteredValue: [searchedText],
+            ellipsis: true,
         },
         {
             title: "HAS.",
@@ -250,7 +270,8 @@ function TablaCampos() {
             align: "left",
             sorter: {
                 compare: (a, b) => a.has - b.has,
-            }
+            },
+            width: 100,
         },
         {
             title: "CONDICIÓN",
@@ -268,6 +289,7 @@ function TablaCampos() {
                     </>
                 );
             },
+            width: 110,
         },
         {
             title: "...",
@@ -283,6 +305,7 @@ function TablaCampos() {
                     </>
                 );
             },
+            width: 60,
         }
     ];
 
@@ -557,9 +580,9 @@ function TablaCampos() {
                     </Row>
                     {/* aca podemos probar con un Space para separar las tablas (que seria tabla y mapa) */}
 
-                    <Row className="tabla-mapa-contenedor" style={{ paddingBottom: "8px", paddingTop: "8px" }}>
+                    <Row gutter={16} className="tabla-mapa-contenedor" style={{ paddingBottom: "8px", paddingTop: "8px" }}>
 
-                        <Col xs={24} sm={24} md={10} >
+                        <Col xs={24} sm={24} md={12} >
 
                             {mostrarCampoSelec ? <Card
                                 title={campo?.nombreCampo}
@@ -647,8 +670,8 @@ function TablaCampos() {
                         </Col>
 
 
-                        <Col xs={24} sm={24} md={13} >
-                            <Mapa editarArea={areaEditar} dataCamposLotes={tableDataCampos} />
+                        <Col xs={24} sm={24} md={12} >
+                            <Mapa editarArea={areaEditar} dataCamposLotes={tableDataCampos} editarLoteValues={lote} />
 
 
                             <div className="area-calculada-contenedor" >
