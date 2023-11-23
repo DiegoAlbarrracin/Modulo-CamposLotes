@@ -580,9 +580,9 @@ function TablaCampos() {
                     </Row>
                     {/* aca podemos probar con un Space para separar las tablas (que seria tabla y mapa) */}
 
-                    <Row gutter={16} className="tabla-mapa-contenedor" style={{ paddingBottom: "8px", paddingTop: "8px" }}>
+                    <Row className="tabla-mapa-contenedor" style={{ paddingBottom: "8px", paddingTop: "8px"}}>
 
-                        <Col xs={24} sm={24} md={12} >
+                        <Col xs={24} sm={24} md={12} style={{ paddingRight:"8px" }}>
 
                             {mostrarCampoSelec ? <Card
                                 title={campo?.nombreCampo}
@@ -670,7 +670,7 @@ function TablaCampos() {
                         </Col>
 
 
-                        <Col xs={24} sm={24} md={12} >
+                        <Col xs={24} sm={24} md={12} style={{ paddingLeft:"8px" }}>
                             <Mapa editarArea={areaEditar} dataCamposLotes={tableDataCampos} editarLoteValues={lote} />
 
 

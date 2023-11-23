@@ -185,11 +185,8 @@ const Mapa = ({ editarArea, dataCamposLotes, editarLoteValues }) => {
 
 
         //Muestra en el mapa, todos los lotes del campo seleccionado, salvo cuando se desee editar un lote, no se agregara su layer, sino que el propio draw lo marcara.
-        console.log('dataCamposLotes',dataCamposLotes)
-        //console.log('editarLoteValues',editarLoteValues.key)
 
         const campoMostrar = dataCamposLotes?.filter((campo) => campo.key == idCampoS);
-        console.log('campoMostrar',campoMostrar[0].lotes)
 
         const lotesDelCampo = editarLoteValues ? campoMostrar[0].lotes?.filter((lote) => lote.key != editarLoteValues?.key) : campoMostrar[0].lotes;
 
@@ -336,7 +333,7 @@ const Mapa = ({ editarArea, dataCamposLotes, editarLoteValues }) => {
     // geometria dibujada al EDITAR
     map.on("draw.update", (e) => {
       console.log(e);
-      console.log(e.features[0].geometry.coordinates[0]);
+      //console.log(e.features[0].geometry.coordinates[0]);
       setGeojson(JSON.stringify(e.features[0].geometry.coordinates[0]));
     });
 
