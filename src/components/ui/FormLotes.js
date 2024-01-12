@@ -153,7 +153,7 @@ function FormLotes({ editarLoteValues, cancelar, notificacion, dataCampos }) {
             label: 'Propio'
         },
         {
-            value: 0,
+            value: 2,
             label: 'Alquilado'
         }
     ];

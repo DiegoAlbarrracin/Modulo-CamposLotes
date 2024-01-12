@@ -282,7 +282,7 @@ function TablaCampos() {
                 return (
                     <>
                         {fila.condicion === '1' && <Tag color="success">PROPIO</Tag>}
-                        {fila.condicion === '0' && <Tag color="error">ALQUILADO</Tag>}
+                        {fila.condicion === '2' && <Tag color="error">ALQUILADO</Tag>}
                         {fila.condicion === null && <Tag color="default">LIMPIAR DE BD</Tag>} {/*salva el error de los lotes sin campo registrados desde antes de este modulo. Dichos lotes NO estan registrados en tabla agro_lotesxsocio, deben eliminarse de la bd, ya que no se puede modificar su condicion*/}
 
                         {fila.geojson === null || fila.geojson === '' && <Tag color="default">SIN GEOJSON</Tag>}
