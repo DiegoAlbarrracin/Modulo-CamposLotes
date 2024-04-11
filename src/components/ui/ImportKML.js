@@ -119,7 +119,7 @@ function ImportKML() {
             </Row>
 
 
-            {showUpload ? <Row style={{marginBottom:"8px"}}>
+            {showUpload ? <Row style={{marginBottom:"20px"}}>
 
                 <Col xs={24} sm={24} md={24}>
 

@@ -87,6 +87,15 @@ function FormLotes({ editarLoteValues, cancelar, notificacion, dataCampos }) {
 
     }, [editarLoteValues]);
 
+    useEffect(() => {
+        if (editarLoteValues === 0) {
+            console.log('NewLote: mapArea')
+            formRef.current.setFieldsValue({
+                has: areaMapa
+            });
+        }
+    },[areaMapa])
+
     const fetchOptionsCampo = async () => {
         const data = await fetch(`${URL}selectCampos.php`);
         const jsonData = await data.json();
@@ -216,7 +225,7 @@ function FormLotes({ editarLoteValues, cancelar, notificacion, dataCampos }) {
                             hasFeedback
                             rules={[
                                 {
-                                    required: false,
+                                    required: true,
                                     message: "Ingrese solo numeros",
                                     pattern: "^[0-9,$]*$"
                                 }
@@ -282,7 +291,7 @@ function FormLotes({ editarLoteValues, cancelar, notificacion, dataCampos }) {
                 <Row>
 
                     <Col xs={24} sm={24} md={24}>
-                        <FormItem name="idCliente" label="Cliente"
+                        <FormItem name="idCliente" label="Cliente" style={{ marginBottom: "8px" }}
                             hasFeedback
                             rules={[{
                                 required: true,
