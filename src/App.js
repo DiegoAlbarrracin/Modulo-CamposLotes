@@ -34,7 +34,7 @@ function App() {
 
 
 
-
+  console.log('version modulo-campos-lotes: 12.04.24')
 
   return (
     <GlobalContext.Provider value={{ areaMapa, setAreaMapa, polygonEdit, setPolygonEdit, reloadMap, setReloadMap, geojson, setGeojson, guardar, setGuardar, ubicacionCampo, setUbicacionCampo, ubicacionLote, setUbicacionLote, areaEditar, setAreaEditar, newLote, setNewLote, idCampoS, setIdCampoS }}>
