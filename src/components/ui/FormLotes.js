@@ -93,6 +93,7 @@ function FormLotes({ editarLoteValues, cancelar, notificacion, dataCampos }) {
             formRef.current.setFieldsValue({
                 has: areaMapa
             });
+            setLote(prev => ({ ...prev, has: areaMapa }))
         }
     },[areaMapa])
 
@@ -104,6 +105,7 @@ function FormLotes({ editarLoteValues, cancelar, notificacion, dataCampos }) {
 
 
     const crearLote = async () => {
+        console.log('crearLote',lote)
 
         const data = new FormData();
         data.append("nombreLote", lote.nombreLote);
@@ -120,7 +122,7 @@ function FormLotes({ editarLoteValues, cancelar, notificacion, dataCampos }) {
             console.log('Debe marcar el area del lote.')
             notificacion(true, 'lote');
             return;
-        }
+        };
 
         const requestOptions = {
             method: 'POST',

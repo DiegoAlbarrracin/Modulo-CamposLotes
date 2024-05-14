@@ -31,13 +31,19 @@ function App() {
   //Todos los lotes de un campo
   const [idCampoS, setIdCampoS] = useState();
 
+  //Ubicacion y zoom unificados
+  const [ubicacionMapa, setUbicacionMapa] = useState();
+  const [zoomMapa, setZoomMapa] = useState(4);
+
+  //Carga basica del mapa
+  const [mapLoaded, setMapLoaded] = useState(false);
 
 
 
-  console.log('version modulo-campos-lotes: 12.04.24')
+  console.log('version modulo-campos-lotes: 14.05.24.v2');
 
   return (
-    <GlobalContext.Provider value={{ areaMapa, setAreaMapa, polygonEdit, setPolygonEdit, reloadMap, setReloadMap, geojson, setGeojson, guardar, setGuardar, ubicacionCampo, setUbicacionCampo, ubicacionLote, setUbicacionLote, areaEditar, setAreaEditar, newLote, setNewLote, idCampoS, setIdCampoS }}>
+    <GlobalContext.Provider value={{ areaMapa, setAreaMapa, polygonEdit, setPolygonEdit, reloadMap, setReloadMap, geojson, setGeojson, guardar, setGuardar, ubicacionCampo, setUbicacionCampo, ubicacionLote, setUbicacionLote, areaEditar, setAreaEditar, newLote, setNewLote, idCampoS, setIdCampoS, ubicacionMapa, setUbicacionMapa, zoomMapa, setZoomMapa, mapLoaded, setMapLoaded }}>
       <ConfigProvider
         locale={esES}
         theme={{

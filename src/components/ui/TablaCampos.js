@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState, useRef } from "react";
 import {
     Button,
     Table,
@@ -10,15 +10,20 @@ import {
     Card,
     Tag,
     Tooltip,
-    Spin
+    Spin,
+    Popconfirm,
+    Select,
+    Popover,
 } from "antd";
 import {
     EditOutlined,
-    SearchOutlined,
     ArrowLeftOutlined,
     CloseOutlined,
     HistoryOutlined,
-    LoadingOutlined
+    LoadingOutlined,
+    DeleteOutlined,
+    PaperClipOutlined,
+    FilterOutlined
 } from "@ant-design/icons";
 import Link from "antd/es/typography/Link";
 import "./TablaCampos.css";
@@ -27,6 +32,7 @@ import FormCampos from "./FormCampos";
 import FormLotes from "./FormLotes";
 import Mapa from "./Mapa";
 import { geojsonFormater } from "../../util/geojsonFormater";
+import DrawerUploads from "./DrawerUploads";
 
 
 function TablaCampos() {
@@ -34,15 +40,31 @@ function TablaCampos() {
     const URL = process.env.REACT_APP_URL;
 
     const tipoAcceso = localStorage.getItem("camposlotes");
+    const idU = localStorage.getItem("usuario");
 
+    const { Search } = Input;
     const { message } = App.useApp();
-    const [searchedText, setSearchedText] = useState('');
+
+    //Rango de usuario: es Administrador o no.
+    const [isAdmin, setIsAdmin] = useState();
+
+    // Filtro campo o lote.
+    const [searchedTextCampo, setSearchedTextCampo] = useState('');
+    const [searchedTextLote, setSearchedTextLote] = useState('');
+    const [filter, setFilter] = useState(2); // 0 campos. 1 lotes. 2 nada.
+    const [open, setOpen] = useState(false);
+
     const [tableDataCampos, setTableDataCampos] = useState();
     const [campo, setCampo] = useState();
     const [lote, setLote] = useState();
     const [tableDataLotes, setTableDataLotes] = useState();
     const [historialLotes, setHistorialLotes] = useState();
     const [loading, setLoading] = useState(true);
+
+    //Buscador de ciudades mapa.
+    const [coordinates, setCoordinates] = useState(null);
+    const [optionsLugar, setOptionsLugar] = useState([]);
+    const [loadingSearch, setLoadingSearch] = useState();
 
     const [switchValue, setSwitchValue] = useState('CAMPOS'); //muestra tabla Campos o Lotes
     const [mostrarABMCampo, setMostrarABMCampo] = useState(false); //muestra abm Campo
@@ -52,8 +74,16 @@ function TablaCampos() {
     const [nuevoLoteLabel, setNuevoLoteLabel] = useState(true); //label nuevo o editar en Lote
     const [mostrarCardHistorial, setMostrarCardHistorial] = useState(false); //muestra historial de Lote.
 
+    const [datosFiltrados, setDatosFiltrados] = useState(tableDataCampos); // datos filtrados de las tablas campos y lotes.
 
-    const { areaMapa, setAreaMapa, setPolygonEdit, polygonEdit, reloadMap, setReloadMap, guardar, setGuardar, setUbicacionCampo, setUbicacionLote, areaEditar, setAreaEditar, setIdCampoS } = useContext(GlobalContext);
+    // Drawer uploads
+    const [drawerUpload, setDrawerUpload] = useState(false);
+    const [modori, setModori] = useState(0);
+    const [filterDrawer, setFilterDrawer] = useState(0);
+    const [generico, setGenerico] = useState(0);
+    const [cliLote, setCliLote] = useState(0);
+
+    const { areaMapa, setAreaMapa, setPolygonEdit, polygonEdit, reloadMap, setReloadMap, guardar, setGuardar, setUbicacionCampo, setUbicacionLote, areaEditar, setAreaEditar, setIdCampoS, setUbicacionMapa, setZoomMapa, mapLoaded } = useContext(GlobalContext);
 
 
     useEffect(() => {
@@ -64,6 +94,9 @@ function TablaCampos() {
         fetchDataHistorialLote()
             .catch(console.error);;
 
+        fetchIsAdmin()
+            .catch(console.error);;
+
     }, [guardar]);
 
     useEffect(() => {
@@ -72,9 +105,24 @@ function TablaCampos() {
 
     }, [tableDataCampos, campo]);
 
+    useEffect(() => {
+
+        if (mapLoaded) {
+            //if (searchedTextCampo.trim().length > 0) {
+            handleFiltroCampos(searchedTextCampo);
+            //}
+            //if (searchedTextLote.trim().length > 0) {
+            handleFiltroLotes(searchedTextLote);
+            //}
+        }
+
+
+    }, [tableDataCampos]);
+
+
 
     const fetchDataCampos = async () => {
-        
+
         //Si no existe un cliSelect en localStorage, significa que no estamos en la vista clientes, estamos en la vista generica.        
         const dataForm = new FormData();
 
@@ -105,24 +153,48 @@ function TablaCampos() {
         //console.log(jsonData)
     };
 
+    const fetchIsAdmin = async () => {
+        const dataForm = new FormData();
+
+        dataForm.append("idU", idU);
+
+        const requestOptions = {
+            method: 'POST',
+            body: dataForm
+        };
+
+        const data = await fetch(`${URL}cam_isAdmin.php`, requestOptions);
+        const jsonData = await data.json();
+        setIsAdmin(jsonData);
+        // console.log(jsonData);
+    };
+
 
     const columnsCampos = [
         {
             title: "CUENTA",
-            dataIndex: "nombreCliente",
+            //dataIndex: "nombreCliente",
             key: "nombreCliente",
             align: "left",
             sorter: {
                 compare: (a, b) => a.nombreCliente?.localeCompare(b.nombreCliente),
             },
-            onFilter: (value, record) => {
-                return String(record.nombreCliente).toUpperCase().trim().includes(value.toUpperCase().trim()) ||
-                    String(record.nombreCampo).toUpperCase().trim().includes(value.toUpperCase().trim()) ||
-                    String(record.acopio).toUpperCase().trim().includes(value.toUpperCase().trim()) ||
-                    String(record.kmsplanta).toUpperCase().trim().includes(value.toUpperCase().trim()) ||
-                    String(record.planta).toUpperCase().trim().includes(value.toUpperCase().trim());
+            onFilter: (value, fila) => {
+                // Logica filtrado para lotes sin campo asignado.
+                if (fila.key === 0) {
+                    fila = { ...fila, 'nombreCampo': 'Sin campo', 'nombreCliente': 'Lotes sin asignar' }
+                }
+                return String(fila.nombreCliente).toUpperCase().trim().includes(value.toUpperCase().trim()) ||
+                    String(fila.nombreCampo).toUpperCase().trim().includes(value.toUpperCase().trim())
             },
-            filteredValue: [searchedText]
+            filteredValue: [searchedTextCampo],
+            render: (fila) => {
+                return (
+                    <>
+                        {fila.nombreCliente ? fila.nombreCliente : 'Sin campo'}
+                    </>
+                );
+            },
         },
         {
             title: "NOMBRE",
@@ -132,7 +204,11 @@ function TablaCampos() {
             render: (fila) => {
                 return (
                     <>
-                        <Link className="icon-color" onClick={() => seleccionarCampo(fila, 'verDetalle')} >{fila.nombreCampo}</Link>
+                        {fila.nombreCampo ?
+                            <Link className="icon-color" onClick={() => seleccionarCampo(fila, 'verDetalle')} >{fila.nombreCampo}</Link>
+                            :
+                            <Link className="icon-color" onClick={() => seleccionarCampo(fila, 'verDetalle')} >Lotes sin asignar</Link>
+                        }
                     </>
                 );
             },
@@ -174,9 +250,12 @@ function TablaCampos() {
             render: (fila) => {
                 return (
                     <>
-                        <div className="btn-contenedor">
-                            <EditOutlined className="icon-color" onClick={() => seleccionarCampo(fila, 'editar')} />
-                        </div>
+                        {fila.key !== 0 ?
+                            <div className="btn-contenedor">
+                                <EditOutlined className="icon-color" onClick={() => seleccionarCampo(fila, 'editar')} />
+                            </div> :
+                            ''
+                        }
                     </>
                 );
             },
@@ -188,6 +267,17 @@ function TablaCampos() {
 
         setMostrarCardHistorial(false); //Card historial se oculta en cualquier otro caso.
 
+        if (fila.key === 0) {
+            setSwitchValue('LOTES');
+            setZoomMapa(10);
+            setCampo(fila);
+
+            setUbicacionCampo(JSON.parse(fila.lotes[0].geojson)); //dibujamos campo (no editable).
+            setUbicacionMapa(JSON.parse(fila.lotes[0].geojson));
+            //setReloadMap(!reloadMap);
+            return
+        };
+
         if (accion === 'crear') {
             setUbicacionCampo(undefined); //Al cerrar el ABM de Lote, que se dirija a la posicion general de cliente a traves de sus parametros, no la del campo seleccionado en el select(dibujo).
             setUbicacionLote(undefined); //Elimina el dibujo del lote de solo visualizacion.
@@ -198,9 +288,8 @@ function TablaCampos() {
             setMostrarCampoSelec(false);
             setCampo(0); //Si entro por el crear, seteo un 0, para pisar la posible data que puede tener campo, si antes presionamos editar un campo y luego presionamos crear.
             setReloadMap(!reloadMap);
-            //setAreaEditar(null)
             setPolygonEdit(true); //habilita herramientas dibujar area.
-            setAreaEditar(undefined); //elimino el area que se pudo seleccionar previo a crear una nueva.
+            setAreaEditar(0); //elimino el area que se pudo seleccionar previo a crear una nueva.
             setAreaMapa(undefined); //Limpio el area seleccionada mapa.
         };
         if (accion === 'editar') {
@@ -212,17 +301,20 @@ function TablaCampos() {
             setAreaEditar(geojsonFormater(fila));
             setReloadMap(!reloadMap);
 
+            if (!datosFiltrados) setDatosFiltrados(tableDataCampos);
+
             setPolygonEdit(false); //deshabilita herramientas dibujar area.
 
         };
         if (accion === 'verDetalle') {
             setMostrarCampoSelec(true);
-            setSwitchValue('LOTES')
+            setSwitchValue('LOTES');
             setCampo(fila);
-     
-            setUbicacionCampo(JSON.parse(fila.geojson)); //dibujamos campo en rojo(no editable).
+            setUbicacionCampo(JSON.parse(fila.geojson)); //dibujamos campo (no editable).
 
-            setIdCampoS(fila?.key)
+            setUbicacionMapa(JSON.parse(fila.geojson));
+            setZoomMapa(14);
+            setIdCampoS(fila?.key);
             setReloadMap(!reloadMap);
         };
     };
@@ -240,14 +332,13 @@ function TablaCampos() {
             },
             defaultSortOrder: 'ascend',
             ellipsis: true,
-            // onFilter: (value, record) => {
-            //     return String(record.nombreCliente).toUpperCase().trim().includes(value.toUpperCase().trim()) ||
-            //         String(record.nombreCampo).toUpperCase().trim().includes(value.toUpperCase().trim()) ||
-            //         String(record.acopio).toUpperCase().trim().includes(value.toUpperCase().trim()) ||
-            //         String(record.kmsplanta).toUpperCase().trim().includes(value.toUpperCase().trim()) ||
-            //         String(record.planta).toUpperCase().trim().includes(value.toUpperCase().trim());
-            // },
-            // filteredValue: [searchedText]
+            onFilter: (value, fila) => {
+                return String(fila.nombreCliente).toUpperCase().trim().includes(value.toUpperCase().trim()) ||
+                    String(fila.nombreLote).toUpperCase().trim().includes(value.toUpperCase().trim()) ||
+                    String(fila.has).toUpperCase().trim().includes(value.toUpperCase().trim());
+            },
+            filteredValue: [searchedTextLote],
+            width: 200,
         },
         {
             title: "NOMBRE",
@@ -256,12 +347,13 @@ function TablaCampos() {
             sorter: {
                 compare: (a, b) => a.nombreLote?.localeCompare(b.nombreLote),
             },
-            onFilter: (value, record) => {
-                return String(record.nombreLote).toUpperCase().trim().includes(value.toUpperCase().trim()) ||
-                    String(record.has).toUpperCase().trim().includes(value.toUpperCase().trim())
-            },
-            filteredValue: [searchedText],
+            // onFilter: (value, fila) => {
+            //     return String(fila.nombreLote).toUpperCase().trim().includes(value.toUpperCase().trim()) ||
+            //         String(fila.has).toUpperCase().trim().includes(value.toUpperCase().trim())
+            // },
+            // filteredValue: [searchedTextCampo],
             ellipsis: true,
+            width: 200,
         },
         {
             title: "HAS.",
@@ -271,7 +363,7 @@ function TablaCampos() {
             sorter: {
                 compare: (a, b) => a.has - b.has,
             },
-            width: 100,
+            width: 60,
         },
         {
             title: "CONDICIÓN",
@@ -289,7 +381,7 @@ function TablaCampos() {
                     </>
                 );
             },
-            width: 110,
+            width: 100,
         },
         {
             title: "...",
@@ -301,6 +393,31 @@ function TablaCampos() {
                         <div className="btn-contenedor">
                             <HistoryOutlined className="icon-color" onClick={() => seleccionarLote(fila, 'verDetalle')} />
                             <EditOutlined className="icon-color" onClick={() => seleccionarLote(fila, 'editar')} />
+                            <PaperClipOutlined className="icon-color" onClick={() => handleUploadClick(fila)} title="Archivos" />
+                            {!historialLotes?.find((loteh) => loteh.idLote === fila?.key) && isAdmin.isAdmin ?
+                                <Popconfirm
+                                    title={
+                                        <div
+                                            style={{
+                                                display: "flex",
+                                                flexDirection: "column",
+                                                width: 250,
+                                                gap: 4,
+                                            }}
+                                        >
+                                            <label>¿Deseas eliminar '{fila.nombreLote}'?</label>
+                                        </div>
+                                    }
+                                    okText="Eliminar"
+                                    cancelText="Cerrar"
+                                    onConfirm={() => eliminarLote(fila)}
+                                    onCancel={() => setUbicacionLote(undefined)}
+                                    placement="left"
+                                >
+                                    <Button type="link" style={{ padding: "0px", margin: "0px" }}>
+                                        <DeleteOutlined style={{ color: "red" }} onClick={() => seleccionarLote(fila, 'eliminar')} />
+                                    </Button>
+                                </Popconfirm> : ''}
                         </div>
                     </>
                 );
@@ -308,6 +425,80 @@ function TablaCampos() {
             width: 60,
         }
     ];
+
+
+    const handleFiltroCampos = (value) => {
+        if (value.trim() !== '') {
+            const datosFiltrados = tableDataCampos.filter(item => {
+                if (item.key === 0) {
+                    item = { ...item, 'nombreCampo': 'Sin campo', 'nombreCliente': 'Lotes sin asignar' }
+                }
+                // Lógica de filtrado
+                const nombreCliente = String(item.nombreCliente).toUpperCase().trim();
+                const nombreCampo = String(item.nombreCampo).toUpperCase().trim();
+                const filtro = value.toUpperCase().trim();
+
+                return nombreCliente.includes(filtro) || nombreCampo.includes(filtro);
+            });
+            setDatosFiltrados(datosFiltrados);
+        } else {
+            setDatosFiltrados(tableDataCampos);
+        }
+
+        setReloadMap(!reloadMap);
+    };
+
+    // console.log('tableDataCampos', tableDataCampos);
+    // console.log('datosFiltrados',datosFiltrados);
+
+    const handleFiltroLotes = (value) => {
+        if (value.trim() !== '') {
+            const datosFiltrados = tableDataCampos.map(campo => {
+                if (campo.lotes) {
+                    const lotesFiltrados = campo.lotes.filter(lote => {
+                        // Filtrar por propiedades del lote
+                        const nombreCliente = String(lote.nombreCliente).toUpperCase().trim();
+                        const nombreLote = String(lote.nombreLote).toUpperCase().trim();
+                        const has = String(lote.has).toUpperCase().trim();
+                        const filtro = value.toUpperCase().trim();
+
+                        return nombreLote.includes(filtro) || has.includes(filtro) || nombreCliente.includes(filtro);
+                    });
+
+                    // Devolver el campo solo si tiene lotes que coincidan con el filtro
+                    if (lotesFiltrados.length > 0) {
+                        return { ...campo, lotes: lotesFiltrados };
+                    }
+                }
+                // Devolver null para los campos sin lotes filtrados
+                return null;
+            }).filter(campo => campo !== null); // Filtrar los campos nulos, es decir, aquellos sin lotes filtrados
+
+            setDatosFiltrados(datosFiltrados);
+        } else {
+            setDatosFiltrados(tableDataCampos);
+        }
+        setReloadMap(!reloadMap);
+    };
+
+
+    const eliminarLote = async (lote) => {
+        //console.log('lote a eliminar', lote)
+
+        const data = new FormData();
+        data.append("alote_id", lote.key);
+
+        const requestOptions = {
+            method: 'POST',
+            body: data
+        };
+        const response = await fetch(`${URL}cam_eliminarLote.php`, requestOptions);
+        console.log(response);
+        setGuardar(!guardar);
+        setReloadMap(!reloadMap);
+        setUbicacionLote(undefined);
+        if (!datosFiltrados) setDatosFiltrados(tableDataCampos);
+    };
 
 
 
@@ -328,35 +519,41 @@ function TablaCampos() {
             setLote(0);
 
             setReloadMap(!reloadMap);
-            //setAreaEditar(null)
             setPolygonEdit(true); //habilita herramientas dibujar area.
-            setAreaEditar(undefined); //elimino el area que se pudo seleccionar previo a crear una nueva.
+            setAreaEditar(0); //elimino el area que se pudo seleccionar previo a crear una nueva.
             setAreaMapa(undefined); //Limpio el area seleccionada mapa.
             return
         };
-        // const loteSeleccionado = tableDataLotes.find((lote) => lote.key === fila.key);
-        // setTableDataLotes(loteSeleccionado.lotes);
         if (accion === 'editar') {
             setSwitchValue('NINGUNO')
             setMostrarABMLote(true);
             setNuevoLoteLabel(false);
             setLote(fila);
+            setUbicacionLote(undefined); //PRUEBA
 
             setAreaEditar(geojsonFormater(fila));
-            setReloadMap(!reloadMap);
+            //setReloadMap(!reloadMap);
 
-            setUbicacionLote(undefined); //Elimina el dibujo del lote de solo visualizacion.
+            //setUbicacionLote(undefined); //Elimina el dibujo del lote de solo visualizacion.
             setPolygonEdit(false); //deshabilita herramientas dibujar area.
 
-            //setMostrarCampoSelec(false);
         };
         if (accion === 'verDetalle') {
             setLote(fila);
             setMostrarCardHistorial(true);
 
-            //setAreaEditar(geojsonFormater(fila));
+            setUbicacionMapa(JSON.parse(fila.geojson));
+            setZoomMapa(14);
+
             setUbicacionLote(JSON.parse(fila.geojson))
             setReloadMap(!reloadMap);
+        };
+        if (accion === 'eliminar') {
+            //console.log('eliminar lote')
+            setLote(fila);
+            setUbicacionMapa(JSON.parse(fila.geojson));
+            setZoomMapa(14);
+            setUbicacionLote(JSON.parse(fila.geojson))
         };
     };
 
@@ -383,7 +580,8 @@ function TablaCampos() {
 
         if (e === 'CAMPOS') {
             setSwitchValue('CAMPOS');
-            //setReloadMap(!reloadMap);
+            setZoomMapa(10);
+
         };
         if (e === 'LOTES') {
             setSwitchValue('LOTES');
@@ -434,6 +632,7 @@ function TablaCampos() {
             showMessage();
             if (tipo === 'campo') selectedOption('CAMPOS');
             if (tipo === 'lote') closeABMLote();
+            if (!datosFiltrados) setDatosFiltrados(tableDataCampos);
             setGuardar(!guardar);
             //setReloadMap(!reloadMap);
         }
@@ -442,9 +641,10 @@ function TablaCampos() {
 
     const reloadDataLotes = () => {
 
-        const idCampo = campo?.key ? campo?.key : 0;
+        const idCampo = campo?.key //? campo?.key : 0;
 
         const campoSeleccionado = tableDataCampos?.find((campoSelect) => campoSelect.key === idCampo);
+        //console.log('campoSeleccionado', campoSeleccionado)
         setTableDataLotes(campoSeleccionado?.lotes);
     };
 
@@ -473,7 +673,7 @@ function TablaCampos() {
             dataIndex: "fechasiembra",
             key: "fechasiembra",
             align: "center",
-            // render: (fechasiembra, record) => (
+            // render: (fechasiembra, fila) => (
             //   <Typography.Text style={{ fontSize: "14px" }}>
             //     {fechasiembra}
             //   </Typography.Text>
@@ -522,6 +722,46 @@ function TablaCampos() {
         />
     );
 
+    const removeAccents = (str) => {
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    };
+
+    const handleSearchMap = async (e) => {
+        setLoadingSearch(true);
+
+        try {
+            const response = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${e}.json?access_token=${process.env.REACT_APP_MAPBOX_TOKEN}`);
+            const data = await response.json();
+            // console.log(data);
+
+            setOptionsLugar(data.features.map((location) => ({
+                value: location?.id,
+                label: removeAccents(location?.place_name),
+                key: location?.id,
+                center: location?.center
+            })));
+
+            setLoadingSearch(false);
+
+        } catch (error) {
+            console.error('Error searching:', error);
+        }
+    };
+
+    const handleSelectCity = (result, option) => {
+        setCoordinates(option.center);
+        setReloadMap(!reloadMap);
+    };
+
+    const handleUploadClick = (fila) => {
+        console.log('fila upload ', fila)
+        setDrawerUpload(true);
+        setModori(4); // lotes = 4
+        setFilterDrawer(4); // lotes = 4
+        setGenerico(Number(fila.key)); // idLote
+        setCliLote(fila.idCliente)
+    };
+
 
     return (
         <div className={loading ? "loading-spin" : "tabla-main-wrapper"}>
@@ -531,14 +771,14 @@ function TablaCampos() {
                     <h3 className="titulo-modulo" >CAMPOS</h3>
 
                     <Row>
-                        <Col xs={24} sm={12} md={10} className="filtros-contenedor">
+                        <Col xs={24} sm={12} md={12} className="filtros-contenedor">
 
 
-                            <Segmented className="switch" block options={[
+                            <Segmented className="custom-switch" block options={[
                                 {
                                     label: (
                                         <div className='parent'>
-                                            <div style={{paddingRight: "3px"}} className="child">CAMPOS</div> 
+                                            <div style={{ paddingRight: "3px" }} className="child">CAMPOS</div>
                                             <div className="child">({tableDataCampos?.filter((campo) => campo.key !== 0).length > 0 ? tableDataCampos?.filter((campo) => campo.key !== 0).length : 0})</div>
                                         </div>
                                     ),
@@ -547,7 +787,7 @@ function TablaCampos() {
                                 {
                                     label: (
                                         <div className='parent'>
-                                            <div style={{paddingRight: "3px"}} className="child">LOTES</div> 
+                                            <div style={{ paddingRight: "3px" }} className="child">LOTES</div>
                                             <div className="child">({tableDataLotes?.length > 0 ? tableDataLotes?.length : 0})</div>
                                         </div>
                                     ),
@@ -556,33 +796,115 @@ function TablaCampos() {
                             ]}
                                 onChange={selectedOption} value={switchValue} />
 
+                            {switchValue === 'CAMPOS' ? <Popover open={open} title={
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        //flexDirection: "column",
+                                        justifyContent: "space-between",
+                                        alignItems: "center",
+                                        width: 250,
+                                        gap: 4,
+                                        marginBottom: "0"
+                                    }}
+                                >
+                                    <label>Filtrar por:</label>
+                                    <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                                        <Button onClick={() => {
+                                            setFilter(0); setOpen(false); setSearchedTextLote(''); setDatosFiltrados(tableDataCampos);
+                                        }}>
+                                            Campos</Button>
+                                        o
+                                        <Button onClick={() => {
+                                            setFilter(1); setOpen(false); setSearchedTextCampo('');
+                                            setDatosFiltrados(tableDataCampos);
+                                        }}>
+                                            Lotes</Button>
+                                    </div>
+                                </div>
+                            } trigger="click" >
+                                <Button onClick={() => setOpen(!open)} icon={<FilterOutlined title="Filtro" />} />
+                            </Popover> : ''}
 
 
-                            <Tooltip title="Buscar por cualquiera de las columnas" placement="top" >
-                                <>
-                                    <Input placeholder="Buscar..." className="buscador"
-                                        suffix={
-                                            <SearchOutlined className="search-icon" />
-                                        }
-                                        onChange={(e) => {
-                                            setSearchedText(e.target.value);
-                                        }}
-                                    />
-                                </>
-                            </Tooltip>
+
+                            {filter === 0 && switchValue === 'CAMPOS' ?
+                                <Tooltip title="Buscar por cuenta o nombre." placement="top" >
+                                    <>
+                                        <Search
+                                            placeholder="Buscar campos..." className="buscador filtro-camposlotes-animation"
+                                            defaultValue={searchedTextCampo}
+                                            onChange={(e) => {
+                                                if (e.target.value.trim() === '') {
+                                                    // console.log('EJECUTA EVENTO VACIO CAMPO')
+                                                    handleFiltroCampos('');
+                                                    setSearchedTextCampo('');
+                                                }
+
+                                            }}
+                                            onSearch={(value) => {
+                                                //console.log('VALOR SEARCH CAMPOS:', value);
+                                                setMostrarCardHistorial(false);
+                                                setUbicacionLote(undefined);
+                                                handleFiltroCampos(value.trim());
+                                                setSearchedTextCampo(value.trim());
+                                            }}
+                                        />
+                                    </>
+                                </Tooltip>
+                                : ''}
+                            {filter === 1 && switchValue === 'CAMPOS' ?
+                                <Tooltip title="Buscar por cuenta, nombre o has." placement="top" >
+                                    <>
+                                        <Search
+                                            placeholder="Buscar lotes..." className="buscador filtro-camposlotes-animation"
+                                            defaultValue={searchedTextLote}
+                                            onChange={(e) => {
+                                                if (e.target.value.trim() === '') {
+                                                    // console.log('EJECUTA EVENTO VACIO')
+                                                    handleFiltroLotes('');
+                                                    setSearchedTextLote('');
+                                                }
+
+                                            }}
+                                            onSearch={(value) => {
+                                                console.log('VALOR SEARCH LOTES:', value);
+                                                // setMostrarCardHistorial(false);
+                                                // setUbicacionLote(undefined);
+                                                handleFiltroLotes(value.trim());
+                                                setSearchedTextLote(value.trim());
+                                            }}
+                                        />
+                                    </>
+                                </Tooltip>
+                                : ''}
                         </Col>
-                        <Col xs={24} sm={12} md={14} className="btn-agregar-contenedor">
+                        <Col xs={24} sm={12} md={12} className="btn-agregar-contenedor">
+
+                            <Select
+                                showSearch
+                                className="buscador"
+                                placeholder="Buscar lugares o direcciones..."
+                                optionFilterProp="children"
+                                filterOption={(input, option) => (option?.label?.toUpperCase().trim() ?? '').includes(input.toUpperCase().trim())}
+                                onSearch={(e) => { handleSearchMap(e) }}
+                                name="idLugar"
+                                id="idLugarSelect"
+                                loading={loadingSearch}
+                                onSelect={handleSelectCity}
+                                options={optionsLugar}
+                            />
 
                             <Button type="primary" className="btn-agregar" onClick={() => seleccionarCampo('btnNuevoCampo', 'crear')}>NUEVO CAMPO</Button>
                             <Button type="primary" className="btn-agregar" onClick={() => seleccionarLote('btnNuevoLote', 'crear')}>NUEVO LOTE</Button>
 
                         </Col>
                     </Row>
-                    {/* aca podemos probar con un Space para separar las tablas (que seria tabla y mapa) */}
+                    {/* aca podemos probar con un Space para separar tabla y mapa */}
 
-                    <Row className="tabla-mapa-contenedor" style={{ paddingBottom: "8px", paddingTop: "8px"}}>
+                    <Row className="tabla-mapa-contenedor" style={{ paddingBottom: "8px", paddingTop: "8px" }}>
 
-                        <Col xs={24} sm={24} md={12} style={{ paddingRight:"8px" }}>
+                        <Col xs={24} sm={24} md={12} style={{ paddingRight: "8px" }}>
 
                             {mostrarCampoSelec ? <Card
                                 title={campo?.nombreCampo}
@@ -609,11 +931,11 @@ function TablaCampos() {
 
 
 
-                            {switchValue === 'LOTES' & !mostrarCampoSelec ? <Card
+                            {switchValue === 'LOTES' & campo?.key === 0 ? <Card
                                 title="Lotes sin campo asignado"
                                 bordered={true}
                                 bodyStyle={{ padding: '0px' }}
-
+                                extra={<ArrowLeftOutlined onClick={() => selectedOption('CAMPOS')} />}
                             >
                             </Card> : ''}
 
@@ -622,7 +944,7 @@ function TablaCampos() {
                             {switchValue === 'CAMPOS' ? <Table
                                 className={mostrarCampoSelec === false && "tabla-campos-switch-animation"}
                                 size={"small"}
-                                dataSource={tableDataCampos?.filter((campo) => campo.key !== 0)} //Elimino la ultima fila, ya que es la de idCampo = 0, no es un campo, son los lotes sin campo.
+                                dataSource={datosFiltrados ? datosFiltrados : tableDataCampos}
                                 columns={columnsCampos}
                                 pagination={{
                                     position: ["none", "bottomRight"],
@@ -670,9 +992,8 @@ function TablaCampos() {
                         </Col>
 
 
-                        <Col xs={24} sm={24} md={12} style={{ paddingLeft:"8px" }}>
-                            <Mapa editarArea={areaEditar} dataCamposLotes={tableDataCampos} editarLoteValues={lote} />
-
+                        <Col xs={24} sm={24} md={12} style={{ paddingLeft: "8px" }}>
+                            <Mapa editarArea={areaEditar} dataCamposLotes={tableDataCampos} editarLoteValues={lote} editarCampoValues={campo} switchValue={switchValue} mostrarCampoSelec={mostrarCampoSelec} datosFiltrados={datosFiltrados} coordinates={coordinates} setCoordinates={setCoordinates} />
 
                             <div className="area-calculada-contenedor" >
                                 {mostrarABMCampo || mostrarABMLote ? <Card
@@ -687,12 +1008,6 @@ function TablaCampos() {
                                     <p style={{ textAlign: "center", margin: "0px" }}>Área de {mostrarABMCampo ? 'campo' : 'lote'} calculada:</p>
 
                                     <h4 style={{ textAlign: "center", margin: "16px 0px", fontWeight: "700", fontSize: "1.1rem" }}>{areaMapa ?? areaMapa} Has.</h4>
-
-                                    {/* <div style={{ textAlign: "center", display: "flex", justifyContent: "space-around" }}>
-                            <Button type="primary" danger style={{ borderRadius: "2px" }}>Cancelar</Button>
-
-                            <Button type="primary" style={{ borderRadius: "2px" }} >Guardar</Button>
-                        </div> */}
 
                                 </Card> : ''}
                             </div>
@@ -718,13 +1033,8 @@ function TablaCampos() {
                                     <Row>
                                         <Col xs={24} sm={24} md={24} >
 
-                                            {/* { historialLotes?.filter((loteh) => loteh.idLote === lote?.key).length > 0 ? "" : <h4 style={{textAlign: "center"}}>
-                                        NO HAY DATOS 
-                                    </h4>} */}
-
                                             <Table
                                                 id="tablaHistorial"
-                                                // style={historialLotes?.filter((loteh) => loteh.idLote === lote?.key).length > 0 ? {} : {maxHeight:"145px"}}
                                                 size='small'
                                                 dataSource={historialLotes?.filter((loteh) => loteh.idLote === lote?.key)}
                                                 columns={columnsHistorialLote}
@@ -743,11 +1053,21 @@ function TablaCampos() {
                                 </Card>
                             </div> : ''}
 
+                            <div style={{ position: "absolute", left: 20, top: 10, backdropFilter: "blur(10px)", padding: "4px", borderRadius: "4px", display: "flex" }} className="texto-con-borde">
+                                <div className="cuadrado-verde"></div> <b style={{ paddingLeft: "4px", paddingRight: "20px" }}> Campo</b>
+                                <div className="cuadrado-celeste"></div> <b style={{ paddingLeft: "4px", paddingRight: "20px" }}> Lote</b>
+                                <div className="cuadrado-rojo"></div> <b style={{ paddingLeft: "4px" }}> Lote sin asignar</b>
+                            </div>
+
                         </Col>
 
                     </Row>
                 </>
             }
+
+
+            {/* Drawer subir archivos */}
+            <DrawerUploads setDrawerUpload={setDrawerUpload} drawerUpload={drawerUpload} modori={modori} filter={filterDrawer} usu={idU} generico={generico} idCliente={cliLote} />
 
         </div>
     )

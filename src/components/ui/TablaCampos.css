@@ -1,14 +1,15 @@
 .btn-contenedor {
     display: flex;
-    justify-content: center;
-    gap: 8px;
+    justify-content: left;
+    gap: 4px;
 }
 
 .filtros-contenedor {
     display: flex;
-    justify-content: space-around;
+    /* justify-content: space-between; */
     gap: 8px;
     align-items: center;
+    padding-left: 8px;
 }
 
 .tabla-mapa-contenedor {
@@ -19,19 +20,27 @@
     padding-right: 8px;
     flex: 1;
 }
+
 .ant-app {
     height: 100%;
 }
+
 .tabla-main-wrapper {
     height: 100%;
     display: flex;
     flex-direction: column;
 }
+
 .buscador {
-    width: 260px;
+    width: 200px !important;
 }
+
 .ant-segmented {
     min-width: 180px;
+}
+
+.ant-popover-title {
+    margin-bottom: 0 !important;
 }
 
 
@@ -53,16 +62,17 @@
 
 
 .tabla-lotes-link-animation {
-     /*ANIMATION*/
+    /*ANIMATION*/
     animation-name: despliegue-vertical;
     animation-duration: 0.5s;
 }
-@keyframes despliegue-vertical{
-    0%{
+
+@keyframes despliegue-vertical {
+    0% {
         transform: translateY(-62%);
     }
 
-    100%{
+    100% {
         transform: translateY(0%);
     }
 }
@@ -72,12 +82,13 @@
     animation-name: despliegue-horizontal-lotes;
     animation-duration: 0.5s;
 }
-@keyframes despliegue-horizontal-lotes{
-    0%{
+
+@keyframes despliegue-horizontal-lotes {
+    0% {
         transform: scale(95%);
     }
 
-    100%{
+    100% {
         transform: scale(100%);
     }
 }
@@ -87,19 +98,20 @@
     animation-name: despliegue-horizontal-campos;
     animation-duration: 0.5s;
 }
-@keyframes despliegue-horizontal-campos{
-    0%{
+
+@keyframes despliegue-horizontal-campos {
+    0% {
         transform: scale(95%);
     }
 
-    100%{
+    100% {
         transform: scale(100%);
     }
 }
 
 .btn-agregar-contenedor {
     display: flex;
-    justify-content: flex-end; 
+    justify-content: flex-end;
     gap: 8px;
     padding-right: 8px;
 }
@@ -115,7 +127,7 @@
 
 .btn-agregar:hover {
     color: #56b43c !important;
-    border-color: #56b43c ;
+    border-color: #56b43c;
     background-color: transparent !important;
 }
 
@@ -136,9 +148,9 @@
 
 /*Spin de carga*/
 .loading-spin {
-  position: absolute;
-  top: 20%;
-  left: 50%;
+    position: absolute;
+    top: 20%;
+    left: 50%;
 }
 
 .ant-card .ant-card-head {
@@ -154,7 +166,57 @@
     text-align: center;
     min-width: 100px;
 }
+
 .child {
     display: inline-block;
     vertical-align: middle;
+}
+
+.inputSearch {
+    width: 237px;
+}
+.inputSearch .ant-input-search-button {
+    display: none;
+}
+
+
+.custom-switch {
+    pointer-events: none; /* Desactivar la interacción con el switch */
+}
+
+/* Filtro campos o lotes animacion */
+.filtro-camposlotes-animation {
+    /*ANIMATION*/
+    animation-name: despliegue-horizontal-filtro;
+    animation-duration: 0.5s;
+}
+
+@keyframes despliegue-horizontal-filtro {
+    0% {
+        transform: translateX(-20%);
+    }
+
+    100% {
+        transform: translateX(0%);
+    }
+}
+
+.texto-con-borde {
+    color: white; /* Color del texto */
+    text-shadow: 
+        -1px -1px 0 black,  
+        1px -1px 0 black,
+        -1px 1px 0 black,
+        1px 1px 0 black; /* Borde negro alrededor del texto */
+}
+
+/* Drawer uploads */
+.drawer-uploads {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 999;
+    height: "100%";
 }
