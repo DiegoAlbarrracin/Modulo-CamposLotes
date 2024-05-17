@@ -83,7 +83,7 @@ function TablaCampos() {
     const [generico, setGenerico] = useState(0);
     const [cliLote, setCliLote] = useState(0);
 
-    const { areaMapa, setAreaMapa, setPolygonEdit, polygonEdit, reloadMap, setReloadMap, guardar, setGuardar, setUbicacionCampo, setUbicacionLote, areaEditar, setAreaEditar, setIdCampoS, setUbicacionMapa, setZoomMapa, mapLoaded } = useContext(GlobalContext);
+    const { areaMapa, setAreaMapa, setPolygonEdit, polygonEdit, reloadMap, setReloadMap, guardar, setGuardar, setUbicacionCampo, setUbicacionLote, areaEditar, setAreaEditar, setIdCampoS, idCampoS, setUbicacionMapa, setZoomMapa, mapLoaded } = useContext(GlobalContext);
 
 
     useEffect(() => {
@@ -271,6 +271,8 @@ function TablaCampos() {
             setSwitchValue('LOTES');
             setZoomMapa(10);
             setCampo(fila);
+
+            setIdCampoS(0);
 
             setUbicacionCampo(JSON.parse(fila.lotes[0].geojson)); //dibujamos campo (no editable).
             setUbicacionMapa(JSON.parse(fila.lotes[0].geojson));
@@ -762,7 +764,43 @@ function TablaCampos() {
         setCliLote(fila.idCliente)
     };
 
+    const handlePageChange = (page) => {
+        // Calcular el índice de inicio y fin de los datos
+        const startIndex = (page - 1) * 10;
+        const endIndex = startIndex + 10;
+        
+        // Filtrar los datos según la página actual
+        const newData = tableDataCampos.slice(startIndex, endIndex);
+        console.log('newData', newData)
+        // Actualizar los datos mostrados en la tabla
+        setDatosFiltrados(newData);
+    };
 
+    const handlePageChangeLotes = (page) => {
+        // Calcular el índice de inicio y fin de los datos
+        const startIndex = (page - 1) * 5;
+        const endIndex = startIndex + 5;
+        console.log('tableDataLotes',tableDataLotes)
+        // Filtrar los datos según la página actual
+        const newData = tableDataLotes.slice(startIndex, endIndex);
+        console.log('newDataLotes', newData)
+        // Actualizar los datos mostrados en la tabla lotes sin asignar
+        if (idCampoS !== 0) {
+            console.log('CAMPO QUE NO ES 0')
+            return
+        }
+        console.log('CAMPO 0')
+        setDatosFiltrados(prev => {
+            let array = [...prev];
+            //console.log('array moded',array)
+            let indexSinCampo = array?.findIndex((campo) => campo.key === 0);
+            array[indexSinCampo].lotes = newData;
+            console.log('array moded',array)
+            return array
+        }); 
+    };
+
+    console.log('idCampoS',idCampoS)
     return (
         <div className={loading ? "loading-spin" : "tabla-main-wrapper"}>
 
@@ -944,11 +982,13 @@ function TablaCampos() {
                             {switchValue === 'CAMPOS' ? <Table
                                 className={mostrarCampoSelec === false && "tabla-campos-switch-animation"}
                                 size={"small"}
-                                dataSource={datosFiltrados ? datosFiltrados : tableDataCampos}
+                                //dataSource={datosFiltrados ? datosFiltrados : tableDataCampos} Original previo.
+                                dataSource={tableDataCampos}
                                 columns={columnsCampos}
                                 pagination={{
                                     position: ["none", "bottomRight"],
-                                    showSizeChanger: false
+                                    showSizeChanger: false,
+                                    onChange: handlePageChange // Función de cambio de página
                                 }}
                             /> : ''}
 
@@ -960,7 +1000,8 @@ function TablaCampos() {
                                 pagination={{
                                     position: ["none", "bottomRight"],
                                     showSizeChanger: false,
-                                    defaultPageSize: mostrarCampoSelec ? 5 : 8
+                                    defaultPageSize: 5,
+                                    onChange: handlePageChangeLotes // Función de cambio de página
                                 }}
                             /> : ''}
 

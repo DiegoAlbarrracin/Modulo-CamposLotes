@@ -301,7 +301,7 @@ const Mapa = ({ editarArea, dataCamposLotes, editarLoteValues, switchValue, most
 
 
 
-    }else{
+    } else {
       //console.log("SACAR CONTROLES")
       if (draw.current) {
         map.current.removeControl(draw.current);
@@ -311,15 +311,15 @@ const Mapa = ({ editarArea, dataCamposLotes, editarLoteValues, switchValue, most
   }, [editarArea])
 
 
-  //console.log('dataCamposLotes',dataCamposLotes)
+  console.log('dataCamposLotes', dataCamposLotes)
   //console.log('layerFill', layersFill)
   //console.log('stateLayersGral', layers)
-  //console.log('datosFiltrados', datosFiltrados)
+  console.log('datosFiltrados', datosFiltrados)
 
 
   const drawAllLayers = async () => {
     // Dibuja todos los campos con sus lotes, ademas de los lotes sin asignar.
-    let dataDibujar = datosFiltrados ? datosFiltrados : dataCamposLotes;
+    let dataDibujar = datosFiltrados ? datosFiltrados : dataCamposLotes.slice(0, 10);
     for (const [index, campo] of dataDibujar.entries()) {
       //console.log(campo)
       const sourceIdCampo = "idSourceCampo" + campo?.key;
@@ -356,7 +356,7 @@ const Mapa = ({ editarArea, dataCamposLotes, editarLoteValues, switchValue, most
           },
         });
 
-      };
+      }
 
       const lotesLayers = [];
       campo?.lotes?.forEach((lote, index) => {
@@ -467,8 +467,8 @@ const Mapa = ({ editarArea, dataCamposLotes, editarLoteValues, switchValue, most
     if (datosFiltrados) {
       await removeAllLayersAndSources();
       await drawAllLayers();
-    } 
-    
+    }
+
     // Elimina los layers no deseados layersDelete
     // for (const element of layersDelete) {
 
