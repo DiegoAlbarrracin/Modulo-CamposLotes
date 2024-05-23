@@ -24,6 +24,7 @@ const Mapa = ({ editarArea, dataCamposLotes, editarLoteValues, switchValue, most
   const [clienteParams, setClienteParams] = useState();
   const [layers, setLayers] = useState([]); // Layer general que almacena todos los campos y lotes.
   const [layersFill, setLayersFill] = useState([]); // Layer que pinta el lote seleccionado
+  const [mapReady, setMapReady] = useState(false);
 
 
   const { setAreaMapa, polygonEdit, reloadMap, setGeojson, ubicacionCampo, ubicacionLote, ubicacionMapa, zoomMapa, guardar, setMapLoaded } = useContext(GlobalContext);
@@ -150,7 +151,7 @@ const Mapa = ({ editarArea, dataCamposLotes, editarLoteValues, switchValue, most
 
       // // Dibuja todos los campos con sus lotes, ademas de los lotes sin asignar.
       await drawAllLayers();
-
+      setMapReady(true);
     });
     //fin Funcion map.current.on("load").
 
@@ -257,7 +258,9 @@ const Mapa = ({ editarArea, dataCamposLotes, editarLoteValues, switchValue, most
 
   useEffect(() => {
 
-    clearLayers();
+    if (mapReady) {
+      clearLayers();
+    }
 
   }, [datosFiltrados, guardar, dataCamposLotes])
 
@@ -311,16 +314,10 @@ const Mapa = ({ editarArea, dataCamposLotes, editarLoteValues, switchValue, most
   }, [editarArea])
 
 
-  console.log('dataCamposLotes', dataCamposLotes)
-  //console.log('layerFill', layersFill)
-  //console.log('stateLayersGral', layers)
-  console.log('datosFiltrados', datosFiltrados)
-
-
   const drawAllLayers = async () => {
     // Dibuja todos los campos con sus lotes, ademas de los lotes sin asignar.
-    let dataDibujar = datosFiltrados ? datosFiltrados : dataCamposLotes.slice(0, 10);
-    for (const [index, campo] of dataDibujar.entries()) {
+    //let dataDibujar = datosFiltrados;
+    for (const [index, campo] of datosFiltrados.entries()) {
       //console.log(campo)
       const sourceIdCampo = "idSourceCampo" + campo?.key;
       const layerIdCampo = "idLayerLineCampo" + campo?.key;
@@ -445,7 +442,9 @@ const Mapa = ({ editarArea, dataCamposLotes, editarLoteValues, switchValue, most
     layers.forEach(layer => {
       // console.log('layer: ', layer)
       if (layer.id.startsWith('idLayer')) {
-        map.current.removeLayer(layer.id);
+        if (map.current.getLayer(layer.id)) {
+          map.current.removeLayer(layer.id);
+        }
       }
     });
 
@@ -455,45 +454,34 @@ const Mapa = ({ editarArea, dataCamposLotes, editarLoteValues, switchValue, most
     Object.keys(sources).forEach(source => {
       //console.log('source :', source)
       if (source.startsWith('idSource') || source.startsWith('idLayerBg')) {
-        map.current.removeSource(source);
+        if (map.current.getSource(source)) {
+          map.current.removeSource(source);
+        }
       }
     });
   };
 
 
 
-  const clearLayers = async (layersDelete, leyersGet) => { // Limpia campos y lotes filtrados.
+  const clearLayers = async () => { // Limpia campos y lotes filtrados.
 
     if (datosFiltrados) {
       await removeAllLayersAndSources();
       await drawAllLayers();
     }
-
-    // Elimina los layers no deseados layersDelete
-    // for (const element of layersDelete) {
-
-
-    //   if (element.idCampo !== 0) {
-    //     map.current.removeLayer(element.layerIdCampo);
-    //     map.current.removeSource(element.sourceIdCampo);
-    //   };
-
-    //   for (const layerLote of element.lotesLayers) {
-    //     map.current.removeLayer(layerLote[0]); // poligono
-    //     map.current.removeLayer(layerLote[1]);// texto
-    //     map.current.removeSource(layerLote[2]);
-    //   };
-
-    // };
   };
 
-
+  //console.log('layersFill', layersFill)
   const clearLayersFill = async () => { // Limpia lote pintado previamente
 
     for (const element of layersFill) {
-      // console.log('fill', element)
-      map.current.removeLayer(element.layerId);
-      map.current.removeSource(element.sourceId);
+      //console.log('layersFill', element)
+      if (map.current.getLayer(element.layerId)) {
+        map.current.removeLayer(element.layerId);
+      }
+      if (map.current.getSource(element.sourceId)) {
+        map.current.removeSource(element.sourceId);
+      }
 
     };
 

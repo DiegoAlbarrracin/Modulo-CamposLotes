@@ -76,6 +76,10 @@ function TablaCampos() {
 
     const [datosFiltrados, setDatosFiltrados] = useState(tableDataCampos); // datos filtrados de las tablas campos y lotes.
 
+    const [currentPage, setCurrentPage] = useState(1); // Pagina tabla campos
+
+    const [datosFilterResult, setDatosFilterResult] = useState();
+
     // Drawer uploads
     const [drawerUpload, setDrawerUpload] = useState(false);
     const [modori, setModori] = useState(0);
@@ -108,12 +112,20 @@ function TablaCampos() {
     useEffect(() => {
 
         if (mapLoaded) {
-            //if (searchedTextCampo.trim().length > 0) {
-            handleFiltroCampos(searchedTextCampo);
-            //}
-            //if (searchedTextLote.trim().length > 0) {
-            handleFiltroLotes(searchedTextLote);
-            //}
+
+            // Respetar filtros
+            if (searchedTextCampo.trim().length > 0) {
+                handleFiltroCampos(searchedTextCampo, currentPage);
+            }
+
+            if (searchedTextLote.trim().length > 0) {
+                handleFiltroLotes(searchedTextLote);
+            }
+
+            // Respetar paginacion:
+            if (searchedTextCampo.trim().length === 0 && searchedTextLote.trim().length === 0) {
+                handlePageChangeCampos(currentPage);
+            }
         }
 
 
@@ -142,8 +154,12 @@ function TablaCampos() {
         const data = await fetch(`${URL}campos-lotes-master.php`, requestOptions);
         const jsonData = await data.json();
         setTableDataCampos(jsonData);
+
+        // Formato de data inicial: 10 primeros campos con sus lotes, en caso de lotes sin asig solo 5 primeros lotes.
+        //handlePageChangeCampos(currentPage);
+        await paginarCamposLotes(jsonData);
+
         setLoading(false);
-        //console.log('fetchDataCampos',jsonData)
     };
 
     const fetchDataHistorialLote = async () => {
@@ -176,9 +192,9 @@ function TablaCampos() {
             //dataIndex: "nombreCliente",
             key: "nombreCliente",
             align: "left",
-            sorter: {
-                compare: (a, b) => a.nombreCliente?.localeCompare(b.nombreCliente),
-            },
+            // sorter: {
+            //     compare: (a, b) => a.nombreCliente?.localeCompare(b.nombreCliente),
+            // },
             onFilter: (value, fila) => {
                 // Logica filtrado para lotes sin campo asignado.
                 if (fila.key === 0) {
@@ -212,9 +228,9 @@ function TablaCampos() {
                     </>
                 );
             },
-            sorter: {
-                compare: (a, b) => a.nombreCampo?.localeCompare(b.nombreCampo),
-            }
+            // sorter: {
+            //     compare: (a, b) => a.nombreCampo?.localeCompare(b.nombreCampo),
+            // }
         },
         // {
         //     title: "CAP. DE ACOPIO",
@@ -329,10 +345,10 @@ function TablaCampos() {
             dataIndex: "nombreCliente",
             key: "nombreCliente",
             align: "left",
-            sorter: {
-                compare: (a, b) => a.nombreCliente?.localeCompare(b.nombreCliente),
-            },
-            defaultSortOrder: 'ascend',
+            // sorter: {
+            //     compare: (a, b) => a.nombreCliente?.localeCompare(b.nombreCliente),
+            // },
+            //defaultSortOrder: 'ascend',
             ellipsis: true,
             onFilter: (value, fila) => {
                 return String(fila.nombreCliente).toUpperCase().trim().includes(value.toUpperCase().trim()) ||
@@ -346,9 +362,9 @@ function TablaCampos() {
             title: "NOMBRE",
             dataIndex: "nombreLote",
             key: "nombreLote",
-            sorter: {
-                compare: (a, b) => a.nombreLote?.localeCompare(b.nombreLote),
-            },
+            // sorter: {
+            //     compare: (a, b) => a.nombreLote?.localeCompare(b.nombreLote),
+            // },
             // onFilter: (value, fila) => {
             //     return String(fila.nombreLote).toUpperCase().trim().includes(value.toUpperCase().trim()) ||
             //         String(fila.has).toUpperCase().trim().includes(value.toUpperCase().trim())
@@ -362,9 +378,9 @@ function TablaCampos() {
             dataIndex: "has",
             key: "has",
             align: "left",
-            sorter: {
-                compare: (a, b) => a.has - b.has,
-            },
+            // sorter: {
+            //     compare: (a, b) => a.has - b.has,
+            // },
             width: 60,
         },
         {
@@ -429,7 +445,10 @@ function TablaCampos() {
     ];
 
 
-    const handleFiltroCampos = (value) => {
+    const handleFiltroCampos = (value, paginaActual) => {
+
+        //console.log('handleFiltroCampos', value)
+
         if (value.trim() !== '') {
             const datosFiltrados = tableDataCampos.filter(item => {
                 if (item.key === 0) {
@@ -442,18 +461,22 @@ function TablaCampos() {
 
                 return nombreCliente.includes(filtro) || nombreCampo.includes(filtro);
             });
-            setDatosFiltrados(datosFiltrados);
-        } else {
-            setDatosFiltrados(tableDataCampos);
+            // console.log('filtro campo buscado', datosFiltrados)
+            handlePageChangeCampos(paginaActual, datosFiltrados);
+            setDatosFilterResult(datosFiltrados);
+        }
+        else {
+            setDatosFilterResult([]);
+            //paginarCamposLotes(tableDataCampos);
+            handlePageChangeCampos(1);
         }
 
         setReloadMap(!reloadMap);
     };
 
-    // console.log('tableDataCampos', tableDataCampos);
-    // console.log('datosFiltrados',datosFiltrados);
 
     const handleFiltroLotes = (value) => {
+
         if (value.trim() !== '') {
             const datosFiltrados = tableDataCampos.map(campo => {
                 if (campo.lotes) {
@@ -476,10 +499,17 @@ function TablaCampos() {
                 return null;
             }).filter(campo => campo !== null); // Filtrar los campos nulos, es decir, aquellos sin lotes filtrados
 
+            // console.log('filtro lote buscado', datosFiltrados)
             setDatosFiltrados(datosFiltrados);
+            setDatosFilterResult(datosFiltrados); // Para afectar visualmente a la tabla campos, y que muestre los campos y lotes no asigandos, que coincidan con la busqueda de lote, se debe asigar un valor a este state.
+
         } else {
-            setDatosFiltrados(tableDataCampos);
-        }
+
+            setDatosFilterResult([]);
+            //paginarCamposLotes(tableDataCampos);
+            handlePageChangeCampos(currentPage);
+        };
+
         setReloadMap(!reloadMap);
     };
 
@@ -499,7 +529,7 @@ function TablaCampos() {
         setGuardar(!guardar);
         setReloadMap(!reloadMap);
         setUbicacionLote(undefined);
-        if (!datosFiltrados) setDatosFiltrados(tableDataCampos);
+        //if (!datosFiltrados) setDatosFiltrados(tableDataCampos);
     };
 
 
@@ -632,9 +662,9 @@ function TablaCampos() {
             return;
         } else {
             showMessage();
-            if (tipo === 'campo') selectedOption('CAMPOS');
+            if (tipo === 'campo') selectedOption('CAMPOS'); //setCurrentPage(1);
             if (tipo === 'lote') closeABMLote();
-            if (!datosFiltrados) setDatosFiltrados(tableDataCampos);
+            //if (!datosFiltrados) setDatosFiltrados(tableDataCampos);
             setGuardar(!guardar);
             //setReloadMap(!reloadMap);
         }
@@ -756,7 +786,7 @@ function TablaCampos() {
     };
 
     const handleUploadClick = (fila) => {
-        console.log('fila upload ', fila)
+        // console.log('fila upload ', fila)
         setDrawerUpload(true);
         setModori(4); // lotes = 4
         setFilterDrawer(4); // lotes = 4
@@ -764,43 +794,91 @@ function TablaCampos() {
         setCliLote(fila.idCliente)
     };
 
-    const handlePageChange = (page) => {
+    const handlePageChangeCampos = async (page, data) => {
+
+        setCurrentPage(page);
         // Calcular el índice de inicio y fin de los datos
         const startIndex = (page - 1) * 10;
         const endIndex = startIndex + 10;
-        
-        // Filtrar los datos según la página actual
-        const newData = tableDataCampos.slice(startIndex, endIndex);
-        console.log('newData', newData)
-        // Actualizar los datos mostrados en la tabla
-        setDatosFiltrados(newData);
+
+        // Pagina los datos (pagina segun haya o no un filtro, si no hay filtro, paginara sobre la totalidad de la data. Si hay filtro pagina sobre la data resultante de aplicar el filtro campos o lotes).
+
+        let newData = [];
+
+        // Si existe filtro
+        if (data?.length > 0) {
+            // console.log('existe filtro')
+            newData = data?.slice(startIndex, endIndex);
+        } else { // Si no existe filtro
+            // console.log('NO existe filtro')
+            newData = tableDataCampos.slice(startIndex, endIndex);
+        }
+
+        paginarCamposLotes(newData);
+        // console.log('newDataCampos', newData)
     };
 
     const handlePageChangeLotes = (page) => {
+
         // Calcular el índice de inicio y fin de los datos
         const startIndex = (page - 1) * 5;
         const endIndex = startIndex + 5;
-        console.log('tableDataLotes',tableDataLotes)
-        // Filtrar los datos según la página actual
+
+        // Filtrar los lotes según la página actual (muestra de 5 en 5)
         const newData = tableDataLotes.slice(startIndex, endIndex);
-        console.log('newDataLotes', newData)
-        // Actualizar los datos mostrados en la tabla lotes sin asignar
         if (idCampoS !== 0) {
-            console.log('CAMPO QUE NO ES 0')
+
             return
-        }
-        console.log('CAMPO 0')
+        };
+
         setDatosFiltrados(prev => {
             let array = [...prev];
-            //console.log('array moded',array)
             let indexSinCampo = array?.findIndex((campo) => campo.key === 0);
             array[indexSinCampo].lotes = newData;
-            console.log('array moded',array)
             return array
-        }); 
+        });
     };
 
-    console.log('idCampoS',idCampoS)
+
+    const paginarCamposLotes = async (jsonData) => {
+
+        // Formato de data inicial: 10 primeros campos con sus lotes (slice en json data desde la carga inicial), en caso de lotes sin asig solo 5 primeros lotes.
+        // Para el resto del ciclo de vida del componente siempre se mostraran de a 5 lotes en 'lotes sin asignar', para evitar sobrecarga del mapa.
+
+        const jsonDataCopy = structuredClone(jsonData);
+
+        // Ordenar lotes por cuenta
+        // jsonDataCopy.forEach(campo => {
+
+        //     campo.lotes?.sort((a, b) => {
+        //         const nombreA = a.nombreCliente?.toUpperCase();
+        //         const nombreB = b.nombreCliente?.toUpperCase();
+
+        //         if (nombreA < nombreB) {
+        //             return -1;
+        //         }
+        //         if (nombreA > nombreB) {
+        //             return 1;
+        //         }
+        //         return 0; // Son iguales
+        //     });
+        // });
+
+
+        // Limita a dibujar solo los 5 primeros lotes no asignados
+        const lotesNoAsig = jsonDataCopy.find(item => item.key === 0);
+        if (lotesNoAsig) {
+            const primerosDiezLotes = lotesNoAsig ? lotesNoAsig.lotes.slice(0, 5) : [];
+            const indexLotesNoAsig = jsonDataCopy.findIndex(item => item.key === 0);
+            jsonDataCopy[indexLotesNoAsig].lotes = primerosDiezLotes;
+        };
+
+        setDatosFiltrados(jsonDataCopy.slice(0, 10));
+
+    };
+
+
+
     return (
         <div className={loading ? "loading-spin" : "tabla-main-wrapper"}>
 
@@ -849,13 +927,12 @@ function TablaCampos() {
                                     <label>Filtrar por:</label>
                                     <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                                         <Button onClick={() => {
-                                            setFilter(0); setOpen(false); setSearchedTextLote(''); setDatosFiltrados(tableDataCampos);
+                                            setFilter(0); setOpen(false); setSearchedTextLote('');
                                         }}>
                                             Campos</Button>
                                         o
                                         <Button onClick={() => {
                                             setFilter(1); setOpen(false); setSearchedTextCampo('');
-                                            setDatosFiltrados(tableDataCampos);
                                         }}>
                                             Lotes</Button>
                                     </div>
@@ -875,16 +952,16 @@ function TablaCampos() {
                                             onChange={(e) => {
                                                 if (e.target.value.trim() === '') {
                                                     // console.log('EJECUTA EVENTO VACIO CAMPO')
-                                                    handleFiltroCampos('');
+                                                    handleFiltroCampos('', 1);
                                                     setSearchedTextCampo('');
                                                 }
 
                                             }}
                                             onSearch={(value) => {
-                                                //console.log('VALOR SEARCH CAMPOS:', value);
+                                                // console.log('VALOR SEARCH CAMPOS:', value);
                                                 setMostrarCardHistorial(false);
                                                 setUbicacionLote(undefined);
-                                                handleFiltroCampos(value.trim());
+                                                handleFiltroCampos(value.trim(), 1);
                                                 setSearchedTextCampo(value.trim());
                                             }}
                                         />
@@ -906,7 +983,7 @@ function TablaCampos() {
 
                                             }}
                                             onSearch={(value) => {
-                                                console.log('VALOR SEARCH LOTES:', value);
+                                                // console.log('VALOR SEARCH LOTES:', value);
                                                 // setMostrarCardHistorial(false);
                                                 // setUbicacionLote(undefined);
                                                 handleFiltroLotes(value.trim());
@@ -983,12 +1060,15 @@ function TablaCampos() {
                                 className={mostrarCampoSelec === false && "tabla-campos-switch-animation"}
                                 size={"small"}
                                 //dataSource={datosFiltrados ? datosFiltrados : tableDataCampos} Original previo.
-                                dataSource={tableDataCampos}
+
+                                // Si hay datos filtrados, que los tome, sino que agarre la data completa.
+                                dataSource={datosFilterResult && datosFilterResult?.length > 0 ? datosFilterResult : tableDataCampos}
                                 columns={columnsCampos}
                                 pagination={{
                                     position: ["none", "bottomRight"],
                                     showSizeChanger: false,
-                                    onChange: handlePageChange // Función de cambio de página
+                                    onChange: (page) => handlePageChangeCampos(page, datosFilterResult), // Función de cambio de página
+                                    current: currentPage
                                 }}
                             /> : ''}
 
