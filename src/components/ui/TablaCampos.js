@@ -14,6 +14,7 @@ import {
     Popconfirm,
     Select,
     Popover,
+    Alert
 } from "antd";
 import {
     EditOutlined,
@@ -79,6 +80,12 @@ function TablaCampos() {
     const [currentPage, setCurrentPage] = useState(1); // Pagina tabla campos
 
     const [datosFilterResult, setDatosFilterResult] = useState();
+
+    // Acceso al modulo-campos-lotes desde modulo_vistaCliente, cuando cliente no posee lotes
+    const [clienteSinLotes, setClienteSinLotes] = useState(false);
+
+    // State para mostrar visualmente si una busqueda por lote arroja o no resultados y que eso afecte visualmente a la tabla Campos
+    const [filtroLoteNoResult, setFiltroLoteNoResult] = useState(false);
 
     // Drawer uploads
     const [drawerUpload, setDrawerUpload] = useState(false);
@@ -153,6 +160,24 @@ function TablaCampos() {
         };
         const data = await fetch(`${URL}campos-lotes-master.php`, requestOptions);
         const jsonData = await data.json();
+
+        // Validacion clientes que no poseen ningun lote, al acceder a este modulo, desde modulo_vistaCliente.
+        let indexSinCampo = jsonData?.findIndex((campo) => campo.key === 0);
+        if (!jsonData[indexSinCampo].lotes && !jsonData[0].lotes) {
+            //console.log('Cliente sin lotes')
+            setClienteSinLotes(true);
+            setLoading(false);
+            setDatosFiltrados([]);
+            return
+        };
+
+        // Validacion si solo posee asignados, quitar seccion 'lotes sin asignar'
+        if (!jsonData[indexSinCampo].lotes) {
+            jsonData.splice(indexSinCampo, 1)
+            // console.log('json data restante', jsonData)
+        };
+
+
         setTableDataCampos(jsonData);
 
         // Formato de data inicial: 10 primeros campos con sus lotes, en caso de lotes sin asig solo 5 primeros lotes.
@@ -462,7 +487,7 @@ function TablaCampos() {
                 return nombreCliente.includes(filtro) || nombreCampo.includes(filtro);
             });
             // console.log('filtro campo buscado', datosFiltrados)
-            handlePageChangeCampos(paginaActual, datosFiltrados);
+            handlePageChangeCampos(paginaActual, datosFiltrados, value);
             setDatosFilterResult(datosFiltrados);
         }
         else {
@@ -499,12 +524,21 @@ function TablaCampos() {
                 return null;
             }).filter(campo => campo !== null); // Filtrar los campos nulos, es decir, aquellos sin lotes filtrados
 
-            // console.log('filtro lote buscado', datosFiltrados)
+            //console.log('filtro lote buscado', datosFiltrados)
+
+            // Validacion: si la busqueda arroja coincidencias, que asigne dicha data a la tabla campos con los lotes filtrados, en caso de NO arrojar coincidencias setear valor 1, para en el componente Table de campos, validar y no mostrar data en dicha tabla cuando no existe coincidencia de lote.
+            if (datosFiltrados.length > 0) {
+                setFiltroLoteNoResult(false);
+            }else {
+                setFiltroLoteNoResult(true);
+            }
+
             setDatosFiltrados(datosFiltrados);
             setDatosFilterResult(datosFiltrados); // Para afectar visualmente a la tabla campos, y que muestre los campos y lotes no asigandos, que coincidan con la busqueda de lote, se debe asigar un valor a este state.
 
         } else {
 
+            setFiltroLoteNoResult(false);
             setDatosFilterResult([]);
             //paginarCamposLotes(tableDataCampos);
             handlePageChangeCampos(currentPage);
@@ -794,7 +828,7 @@ function TablaCampos() {
         setCliLote(fila.idCliente)
     };
 
-    const handlePageChangeCampos = async (page, data) => {
+    const handlePageChangeCampos = async (page, data, searchedText) => {
 
         setCurrentPage(page);
         // Calcular el índice de inicio y fin de los datos
@@ -805,11 +839,17 @@ function TablaCampos() {
 
         let newData = [];
 
-        // Si existe filtro
-        if (data?.length > 0) {
-            // console.log('existe filtro')
-            newData = data?.slice(startIndex, endIndex);
-        } else { // Si no existe filtro
+        if (searchedText || data?.length > 0) { //Existe filtro
+            
+            if (data?.length > 0) {
+                // console.log('SI existe filtro con datos')
+                newData = data?.slice(startIndex, endIndex);
+            } else { 
+                // console.log('SI existe filtro pero no arroja datos')
+                newData = [];
+            }
+            
+        } else { // No existe filtro
             // console.log('NO existe filtro')
             newData = tableDataCampos.slice(startIndex, endIndex);
         }
@@ -867,7 +907,8 @@ function TablaCampos() {
 
         // Limita a dibujar solo los 5 primeros lotes no asignados
         const lotesNoAsig = jsonDataCopy.find(item => item.key === 0);
-        if (lotesNoAsig) {
+        // console.log('lotes no asig 0', lotesNoAsig)
+        if (lotesNoAsig?.lotes) {
             const primerosDiezLotes = lotesNoAsig ? lotesNoAsig.lotes.slice(0, 5) : [];
             const indexLotesNoAsig = jsonDataCopy.findIndex(item => item.key === 0);
             jsonDataCopy[indexLotesNoAsig].lotes = primerosDiezLotes;
@@ -877,313 +918,322 @@ function TablaCampos() {
 
     };
 
-
+    // console.log('datosFilterResult', datosFilterResult)
+    // console.log('datosFiltrados', datosFiltrados)
+    // console.log('filtroLoteNoResult', filtroLoteNoResult)
 
     return (
         <div className={loading ? "loading-spin" : "tabla-main-wrapper"}>
 
-            {loading ? <Spin spinning={true} indicator={loadingIcon} tip="Cargando" size="large"><div style={{ color: 'transparent' }}>Cargando...</div></Spin> :
-                <>
-                    <h3 className="titulo-modulo" >CAMPOS</h3>
+            {clienteSinLotes ? <Row style={{ paddingTop: "20px", display: "flex", justifyContent: "center"}}>
+                <Col xs={12} sm={12} md={12}>
+                    <Alert message="Este cliente no tiene lotes asignados. Si desea agregar un nuevo lote para este cliente, por favor ingrese al módulo 'Campos y Lotes' desde el menú." type="info" showIcon />
+                </Col>
 
-                    <Row>
-                        <Col xs={24} sm={12} md={12} className="filtros-contenedor">
+            </Row> :
 
+                loading ? <Spin spinning={true} indicator={loadingIcon} tip="Cargando" size="large"><div style={{ color: 'transparent' }}>Cargando...</div></Spin> :
+                    <>
+                        <h3 className="titulo-modulo" >CAMPOS</h3>
 
-                            <Segmented className="custom-switch" block options={[
-                                {
-                                    label: (
-                                        <div className='parent'>
-                                            <div style={{ paddingRight: "3px" }} className="child">CAMPOS</div>
-                                            <div className="child">({tableDataCampos?.filter((campo) => campo.key !== 0).length > 0 ? tableDataCampos?.filter((campo) => campo.key !== 0).length : 0})</div>
-                                        </div>
-                                    ),
-                                    value: 'CAMPOS',
-                                },
-                                {
-                                    label: (
-                                        <div className='parent'>
-                                            <div style={{ paddingRight: "3px" }} className="child">LOTES</div>
-                                            <div className="child">({tableDataLotes?.length > 0 ? tableDataLotes?.length : 0})</div>
-                                        </div>
-                                    ),
-                                    value: 'LOTES',
-                                }
-                            ]}
-                                onChange={selectedOption} value={switchValue} />
-
-                            {switchValue === 'CAMPOS' ? <Popover open={open} title={
-                                <div
-                                    style={{
-                                        display: "flex",
-                                        //flexDirection: "column",
-                                        justifyContent: "space-between",
-                                        alignItems: "center",
-                                        width: 250,
-                                        gap: 4,
-                                        marginBottom: "0"
-                                    }}
-                                >
-                                    <label>Filtrar por:</label>
-                                    <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                                        <Button onClick={() => {
-                                            setFilter(0); setOpen(false); setSearchedTextLote('');
-                                        }}>
-                                            Campos</Button>
-                                        o
-                                        <Button onClick={() => {
-                                            setFilter(1); setOpen(false); setSearchedTextCampo('');
-                                        }}>
-                                            Lotes</Button>
-                                    </div>
-                                </div>
-                            } trigger="click" >
-                                <Button onClick={() => setOpen(!open)} icon={<FilterOutlined title="Filtro" />} />
-                            </Popover> : ''}
+                        <Row>
+                            <Col xs={24} sm={12} md={12} className="filtros-contenedor">
 
 
-
-                            {filter === 0 && switchValue === 'CAMPOS' ?
-                                <Tooltip title="Buscar por cuenta o nombre." placement="top" >
-                                    <>
-                                        <Search
-                                            placeholder="Buscar campos..." className="buscador filtro-camposlotes-animation"
-                                            defaultValue={searchedTextCampo}
-                                            onChange={(e) => {
-                                                if (e.target.value.trim() === '') {
-                                                    // console.log('EJECUTA EVENTO VACIO CAMPO')
-                                                    handleFiltroCampos('', 1);
-                                                    setSearchedTextCampo('');
-                                                }
-
-                                            }}
-                                            onSearch={(value) => {
-                                                // console.log('VALOR SEARCH CAMPOS:', value);
-                                                setMostrarCardHistorial(false);
-                                                setUbicacionLote(undefined);
-                                                handleFiltroCampos(value.trim(), 1);
-                                                setSearchedTextCampo(value.trim());
-                                            }}
-                                        />
-                                    </>
-                                </Tooltip>
-                                : ''}
-                            {filter === 1 && switchValue === 'CAMPOS' ?
-                                <Tooltip title="Buscar por cuenta, nombre o has." placement="top" >
-                                    <>
-                                        <Search
-                                            placeholder="Buscar lotes..." className="buscador filtro-camposlotes-animation"
-                                            defaultValue={searchedTextLote}
-                                            onChange={(e) => {
-                                                if (e.target.value.trim() === '') {
-                                                    // console.log('EJECUTA EVENTO VACIO')
-                                                    handleFiltroLotes('');
-                                                    setSearchedTextLote('');
-                                                }
-
-                                            }}
-                                            onSearch={(value) => {
-                                                // console.log('VALOR SEARCH LOTES:', value);
-                                                // setMostrarCardHistorial(false);
-                                                // setUbicacionLote(undefined);
-                                                handleFiltroLotes(value.trim());
-                                                setSearchedTextLote(value.trim());
-                                            }}
-                                        />
-                                    </>
-                                </Tooltip>
-                                : ''}
-                        </Col>
-                        <Col xs={24} sm={12} md={12} className="btn-agregar-contenedor">
-
-                            <Select
-                                showSearch
-                                className="buscador"
-                                placeholder="Buscar lugares o direcciones..."
-                                optionFilterProp="children"
-                                filterOption={(input, option) => (option?.label?.toUpperCase().trim() ?? '').includes(input.toUpperCase().trim())}
-                                onSearch={(e) => { handleSearchMap(e) }}
-                                name="idLugar"
-                                id="idLugarSelect"
-                                loading={loadingSearch}
-                                onSelect={handleSelectCity}
-                                options={optionsLugar}
-                            />
-
-                            <Button type="primary" className="btn-agregar" onClick={() => seleccionarCampo('btnNuevoCampo', 'crear')}>NUEVO CAMPO</Button>
-                            <Button type="primary" className="btn-agregar" onClick={() => seleccionarLote('btnNuevoLote', 'crear')}>NUEVO LOTE</Button>
-
-                        </Col>
-                    </Row>
-                    {/* aca podemos probar con un Space para separar tabla y mapa */}
-
-                    <Row className="tabla-mapa-contenedor" style={{ paddingBottom: "8px", paddingTop: "8px" }}>
-
-                        <Col xs={24} sm={24} md={12} style={{ paddingRight: "8px" }}>
-
-                            {mostrarCampoSelec ? <Card
-                                title={campo?.nombreCampo}
-                                bordered={true}
-                                extra={<ArrowLeftOutlined onClick={() => selectedOption('CAMPOS')} />}
-                                className="campo-card-show"
-                            >
-                                <>
-                                    <Row style={{ marginBottom: "20px" }}>
-                                        <Col xs={24} sm={24} md={24} >
-                                            <div><b>Cliente: </b>{campo?.nombreCliente}</div>
-                                        </Col>
-                                        {/* <Col xs={24} sm={12} md={12} >
-                                    <div><b>KMs a planta: </b>{campo?.kmsplanta}</div>
-                                </Col> */}
-                                    </Row>
-                                    <Row>
-                                        <Col xs={24} sm={24} md={24} >
-                                            <div><b>Descripción: </b>{campo?.descripcion}</div>
-                                        </Col>
-                                    </Row>
-                                </>
-                            </Card> : ''}
-
-
-
-                            {switchValue === 'LOTES' & campo?.key === 0 ? <Card
-                                title="Lotes sin campo asignado"
-                                bordered={true}
-                                bodyStyle={{ padding: '0px' }}
-                                extra={<ArrowLeftOutlined onClick={() => selectedOption('CAMPOS')} />}
-                            >
-                            </Card> : ''}
-
-
-
-                            {switchValue === 'CAMPOS' ? <Table
-                                className={mostrarCampoSelec === false && "tabla-campos-switch-animation"}
-                                size={"small"}
-                                //dataSource={datosFiltrados ? datosFiltrados : tableDataCampos} Original previo.
-
-                                // Si hay datos filtrados, que los tome, sino que agarre la data completa.
-                                dataSource={datosFilterResult && datosFilterResult?.length > 0 ? datosFilterResult : tableDataCampos}
-                                columns={columnsCampos}
-                                pagination={{
-                                    position: ["none", "bottomRight"],
-                                    showSizeChanger: false,
-                                    onChange: (page) => handlePageChangeCampos(page, datosFilterResult), // Función de cambio de página
-                                    current: currentPage
-                                }}
-                            /> : ''}
-
-                            {switchValue === 'LOTES' ? <Table
-                                className={mostrarCampoSelec & switchValue === 'LOTES' ? "tabla-lotes-link-animation" : "tabla-lotes-switch-animation"}
-                                size={"small"}
-                                dataSource={tableDataLotes}
-                                columns={columnsLotes}
-                                pagination={{
-                                    position: ["none", "bottomRight"],
-                                    showSizeChanger: false,
-                                    defaultPageSize: 5,
-                                    onChange: handlePageChangeLotes // Función de cambio de página
-                                }}
-                            /> : ''}
-
-
-                            {/* Agregar/Editar CAMPO */}
-                            {mostrarABMCampo ? <Card
-                                title={nuevoCampoLabel ? "NUEVO CAMPO" : "EDITAR CAMPO"}
-                                bordered={true}
-                                extra={<CloseOutlined onClick={() => selectedOption('CAMPOS')} />}
-                                className={mostrarCampoSelec === false && "tabla-campos-switch-animation"}
-
-                            >
-                                <FormCampos editarCampoValues={campo} cancelar={selectedOption} notificacion={accionGuardarABM} />
-                            </Card> : ''}
-
-
-
-
-                            {/* Agregar/Editar LOTE */}
-                            {mostrarABMLote ? <Card
-                                title={nuevoLoteLabel ? "NUEVO LOTE" : "EDITAR LOTE"}
-                                bordered={true}
-                                extra={<CloseOutlined onClick={closeABMLote} />}
-                                className={"tabla-lotes-switch-animation"}
-                            >
-                                <FormLotes editarLoteValues={lote} cancelar={closeABMLote} notificacion={accionGuardarABM} dataCampos={tableDataCampos} />
-                            </Card> : ''}
-
-                        </Col>
-
-
-                        <Col xs={24} sm={24} md={12} style={{ paddingLeft: "8px" }}>
-                            <Mapa editarArea={areaEditar} dataCamposLotes={tableDataCampos} editarLoteValues={lote} editarCampoValues={campo} switchValue={switchValue} mostrarCampoSelec={mostrarCampoSelec} datosFiltrados={datosFiltrados} coordinates={coordinates} setCoordinates={setCoordinates} />
-
-                            <div className="area-calculada-contenedor" >
-                                {mostrarABMCampo || mostrarABMLote ? <Card
-                                    bordered={true}
-                                    className="card-area-calculada"
-                                    bodyStyle={{ padding: '0 8px 8px 8px' }}
-                                >
-                                    <p className="card-nombre-contenedor">
-                                        {campo?.nombreCampo}
-                                    </p>
-
-                                    <p style={{ textAlign: "center", margin: "0px" }}>Área de {mostrarABMCampo ? 'campo' : 'lote'} calculada:</p>
-
-                                    <h4 style={{ textAlign: "center", margin: "16px 0px", fontWeight: "700", fontSize: "1.1rem" }}>{areaMapa ?? areaMapa} Has.</h4>
-
-                                </Card> : ''}
-                            </div>
-
-
-
-                            {mostrarCardHistorial ? <div className="card-historialLote-contenedor">
-                                {/* Modal historial lote */}
-                                <Card
-                                    title={
-                                        <div className="contenedor-titulo-modal">
-                                            <div className="lote-historial-modal">
-                                                <HistoryOutlined style={{ paddingRight: "5px" }} /> {lote?.nombreLote}</div>
-                                        </div>
+                                <Segmented className="custom-switch" block options={[
+                                    {
+                                        label: (
+                                            <div className='parent'>
+                                                <div style={{ paddingRight: "3px" }} className="child">CAMPOS</div>
+                                                <div className="child">({tableDataCampos?.filter((campo) => campo.key !== 0).length > 0 ? tableDataCampos?.filter((campo) => campo.key !== 0).length : 0})</div>
+                                            </div>
+                                        ),
+                                        value: 'CAMPOS',
+                                    },
+                                    {
+                                        label: (
+                                            <div className='parent'>
+                                                <div style={{ paddingRight: "3px" }} className="child">LOTES</div>
+                                                <div className="child">({tableDataLotes?.length > 0 ? tableDataLotes?.length : 0})</div>
+                                            </div>
+                                        ),
+                                        value: 'LOTES',
                                     }
+                                ]}
+                                    onChange={selectedOption} value={switchValue} />
 
-                                    size="small"
-                                    bodyStyle={{ padding: '0px 8px' }}
-                                    headStyle={{ padding: '0px 8px' }}
+                                {switchValue === 'CAMPOS' ? <Popover open={open} title={
+                                    <div
+                                        style={{
+                                            display: "flex",
+                                            //flexDirection: "column",
+                                            justifyContent: "space-between",
+                                            alignItems: "center",
+                                            width: 250,
+                                            gap: 4,
+                                            marginBottom: "0"
+                                        }}
+                                    >
+                                        <label>Filtrar por:</label>
+                                        <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                                            <Button onClick={() => {
+                                                setFilter(0); setOpen(false); setSearchedTextLote('');
+                                            }}>
+                                                Campos</Button>
+                                            o
+                                            <Button onClick={() => {
+                                                setFilter(1); setOpen(false); setSearchedTextCampo('');
+                                            }}>
+                                                Lotes</Button>
+                                        </div>
+                                    </div>
+                                } trigger="click" >
+                                    <Button onClick={() => setOpen(!open)} icon={<FilterOutlined title="Filtro" />} />
+                                </Popover> : ''}
 
-                                >
 
-                                    <Row>
-                                        <Col xs={24} sm={24} md={24} >
 
-                                            <Table
-                                                id="tablaHistorial"
-                                                size='small'
-                                                dataSource={historialLotes?.filter((loteh) => loteh.idLote === lote?.key)}
-                                                columns={columnsHistorialLote}
-                                                pagination={{
-                                                    position: ["none", "bottomRight"],
-                                                    showSizeChanger: false,
-                                                    defaultPageSize: 2,
-                                                    size: "small",
-                                                    style: { margin: "2px 0px 2px 0px" }
+                                {filter === 0 && switchValue === 'CAMPOS' ?
+                                    <Tooltip title="Buscar por cuenta o nombre." placement="top" >
+                                        <>
+                                            <Search
+                                                placeholder="Buscar campos..." className="buscador filtro-camposlotes-animation"
+                                                defaultValue={searchedTextCampo}
+                                                onChange={(e) => {
+                                                    if (e.target.value.trim() === '') {
+                                                        // console.log('EJECUTA EVENTO VACIO CAMPO')
+                                                        handleFiltroCampos('', 1);
+                                                        setSearchedTextCampo('');
+                                                    }
+
+                                                }}
+                                                onSearch={(value) => {
+                                                    // console.log('VALOR SEARCH CAMPOS:', value);
+                                                    setMostrarCardHistorial(false);
+                                                    setUbicacionLote(undefined);
+                                                    handleFiltroCampos(value.trim(), 1);
+                                                    setSearchedTextCampo(value.trim());
                                                 }}
                                             />
+                                        </>
+                                    </Tooltip>
+                                    : ''}
+                                {filter === 1 && switchValue === 'CAMPOS' ?
+                                    <Tooltip title="Buscar por cuenta, nombre o has." placement="top" >
+                                        <>
+                                            <Search
+                                                placeholder="Buscar lotes..." className="buscador filtro-camposlotes-animation"
+                                                defaultValue={searchedTextLote}
+                                                onChange={(e) => {
+                                                    if (e.target.value.trim() === '') {
+                                                        // console.log('EJECUTA EVENTO VACIO')
+                                                        handleFiltroLotes('');
+                                                        setSearchedTextLote('');
+                                                    }
 
-                                        </Col>
-                                    </Row>
+                                                }}
+                                                onSearch={(value) => {
+                                                    // console.log('VALOR SEARCH LOTES:', value);
+                                                    // setMostrarCardHistorial(false);
+                                                    // setUbicacionLote(undefined);
+                                                    handleFiltroLotes(value.trim());
+                                                    setSearchedTextLote(value.trim());
+                                                }}
+                                            />
+                                        </>
+                                    </Tooltip>
+                                    : ''}
+                            </Col>
+                            <Col xs={24} sm={12} md={12} className="btn-agregar-contenedor">
 
-                                </Card>
-                            </div> : ''}
+                                <Select
+                                    showSearch
+                                    className="buscador"
+                                    placeholder="Buscar lugares o direcciones..."
+                                    optionFilterProp="children"
+                                    filterOption={(input, option) => (option?.label?.toUpperCase().trim() ?? '').includes(input.toUpperCase().trim())}
+                                    onSearch={(e) => { handleSearchMap(e) }}
+                                    name="idLugar"
+                                    id="idLugarSelect"
+                                    loading={loadingSearch}
+                                    onSelect={handleSelectCity}
+                                    options={optionsLugar}
+                                />
 
-                            <div style={{ position: "absolute", left: 20, top: 10, backdropFilter: "blur(10px)", padding: "4px", borderRadius: "4px", display: "flex" }} className="texto-con-borde">
-                                <div className="cuadrado-verde"></div> <b style={{ paddingLeft: "4px", paddingRight: "20px" }}> Campo</b>
-                                <div className="cuadrado-celeste"></div> <b style={{ paddingLeft: "4px", paddingRight: "20px" }}> Lote</b>
-                                <div className="cuadrado-rojo"></div> <b style={{ paddingLeft: "4px" }}> Lote sin asignar</b>
-                            </div>
+                                <Button type="primary" className="btn-agregar" onClick={() => seleccionarCampo('btnNuevoCampo', 'crear')}>NUEVO CAMPO</Button>
+                                <Button type="primary" className="btn-agregar" onClick={() => seleccionarLote('btnNuevoLote', 'crear')}>NUEVO LOTE</Button>
 
-                        </Col>
+                            </Col>
+                        </Row>
+                        {/* aca podemos probar con un Space para separar tabla y mapa */}
 
-                    </Row>
-                </>
+                        <Row className="tabla-mapa-contenedor" style={{ paddingBottom: "8px", paddingTop: "8px" }}>
+
+                            <Col xs={24} sm={24} md={12} style={{ paddingRight: "8px" }}>
+
+                                {mostrarCampoSelec ? <Card
+                                    title={campo?.nombreCampo}
+                                    bordered={true}
+                                    extra={<ArrowLeftOutlined onClick={() => selectedOption('CAMPOS')} />}
+                                    className="campo-card-show"
+                                >
+                                    <>
+                                        <Row style={{ marginBottom: "20px" }}>
+                                            <Col xs={24} sm={24} md={24} >
+                                                <div><b>Cliente: </b>{campo?.nombreCliente}</div>
+                                            </Col>
+                                            {/* <Col xs={24} sm={12} md={12} >
+                                    <div><b>KMs a planta: </b>{campo?.kmsplanta}</div>
+                                </Col> */}
+                                        </Row>
+                                        <Row>
+                                            <Col xs={24} sm={24} md={24} >
+                                                <div><b>Descripción: </b>{campo?.descripcion}</div>
+                                            </Col>
+                                        </Row>
+                                    </>
+                                </Card> : ''}
+
+
+
+                                {switchValue === 'LOTES' & campo?.key === 0 ? <Card
+                                    title="Lotes sin campo asignado"
+                                    bordered={true}
+                                    bodyStyle={{ padding: '0px' }}
+                                    extra={<ArrowLeftOutlined onClick={() => selectedOption('CAMPOS')} />}
+                                >
+                                </Card> : ''}
+
+
+
+                                {switchValue === 'CAMPOS' ? <Table
+                                    className={mostrarCampoSelec === false && "tabla-campos-switch-animation"}
+                                    size={"small"}
+                                    //dataSource={datosFiltrados ? datosFiltrados : tableDataCampos} Original previo.
+
+                                    // Si hay datos filtrados, que los tome, sino que agarre la data completa. Esta logica esta solo relacionada al filtro lotes.
+                                    dataSource={filtroLoteNoResult ? [] : datosFilterResult && datosFilterResult?.length > 0 ? datosFilterResult : tableDataCampos}
+                                    columns={columnsCampos}
+                                    pagination={{
+                                        position: ["none", "bottomRight"],
+                                        showSizeChanger: false,
+                                        onChange: (page) => handlePageChangeCampos(page, datosFilterResult), // Función de cambio de página
+                                        current: currentPage
+                                    }}
+                                /> : ''}
+
+                                {switchValue === 'LOTES' ? <Table
+                                    className={mostrarCampoSelec & switchValue === 'LOTES' ? "tabla-lotes-link-animation" : "tabla-lotes-switch-animation"}
+                                    size={"small"}
+                                    dataSource={tableDataLotes}
+                                    columns={columnsLotes}
+                                    pagination={{
+                                        position: ["none", "bottomRight"],
+                                        showSizeChanger: false,
+                                        defaultPageSize: 5,
+                                        onChange: handlePageChangeLotes // Función de cambio de página
+                                    }}
+                                /> : ''}
+
+
+                                {/* Agregar/Editar CAMPO */}
+                                {mostrarABMCampo ? <Card
+                                    title={nuevoCampoLabel ? "NUEVO CAMPO" : "EDITAR CAMPO"}
+                                    bordered={true}
+                                    extra={<CloseOutlined onClick={() => selectedOption('CAMPOS')} />}
+                                    className={mostrarCampoSelec === false && "tabla-campos-switch-animation"}
+
+                                >
+                                    <FormCampos editarCampoValues={campo} cancelar={selectedOption} notificacion={accionGuardarABM} />
+                                </Card> : ''}
+
+
+
+
+                                {/* Agregar/Editar LOTE */}
+                                {mostrarABMLote ? <Card
+                                    title={nuevoLoteLabel ? "NUEVO LOTE" : "EDITAR LOTE"}
+                                    bordered={true}
+                                    extra={<CloseOutlined onClick={closeABMLote} />}
+                                    className={"tabla-lotes-switch-animation"}
+                                >
+                                    <FormLotes editarLoteValues={lote} cancelar={closeABMLote} notificacion={accionGuardarABM} dataCampos={tableDataCampos} />
+                                </Card> : ''}
+
+                            </Col>
+
+
+                            <Col xs={24} sm={24} md={12} style={{ paddingLeft: "8px" }}>
+                                <Mapa editarArea={areaEditar} dataCamposLotes={tableDataCampos} editarLoteValues={lote} editarCampoValues={campo} switchValue={switchValue} mostrarCampoSelec={mostrarCampoSelec} datosFiltrados={datosFiltrados} coordinates={coordinates} setCoordinates={setCoordinates} />
+
+                                <div className="area-calculada-contenedor" >
+                                    {mostrarABMCampo || mostrarABMLote ? <Card
+                                        bordered={true}
+                                        className="card-area-calculada"
+                                        bodyStyle={{ padding: '0 8px 8px 8px' }}
+                                    >
+                                        <p className="card-nombre-contenedor">
+                                            {campo?.nombreCampo}
+                                        </p>
+
+                                        <p style={{ textAlign: "center", margin: "0px" }}>Área de {mostrarABMCampo ? 'campo' : 'lote'} calculada:</p>
+
+                                        <h4 style={{ textAlign: "center", margin: "16px 0px", fontWeight: "700", fontSize: "1.1rem" }}>{areaMapa ?? areaMapa} Has.</h4>
+
+                                    </Card> : ''}
+                                </div>
+
+
+
+                                {mostrarCardHistorial ? <div className="card-historialLote-contenedor">
+                                    {/* Modal historial lote */}
+                                    <Card
+                                        title={
+                                            <div className="contenedor-titulo-modal">
+                                                <div className="lote-historial-modal">
+                                                    <HistoryOutlined style={{ paddingRight: "5px" }} /> {lote?.nombreLote}</div>
+                                            </div>
+                                        }
+
+                                        size="small"
+                                        bodyStyle={{ padding: '0px 8px' }}
+                                        headStyle={{ padding: '0px 8px' }}
+
+                                    >
+
+                                        <Row>
+                                            <Col xs={24} sm={24} md={24} >
+
+                                                <Table
+                                                    id="tablaHistorial"
+                                                    size='small'
+                                                    dataSource={historialLotes?.filter((loteh) => loteh.idLote === lote?.key)}
+                                                    columns={columnsHistorialLote}
+                                                    pagination={{
+                                                        position: ["none", "bottomRight"],
+                                                        showSizeChanger: false,
+                                                        defaultPageSize: 2,
+                                                        size: "small",
+                                                        style: { margin: "2px 0px 2px 0px" }
+                                                    }}
+                                                />
+
+                                            </Col>
+                                        </Row>
+
+                                    </Card>
+                                </div> : ''}
+
+                                <div style={{ position: "absolute", left: 20, top: 10, backdropFilter: "blur(10px)", padding: "4px", borderRadius: "4px", display: "flex" }} className="texto-con-borde">
+                                    <div className="cuadrado-verde"></div> <b style={{ paddingLeft: "4px", paddingRight: "20px" }}> Campo</b>
+                                    <div className="cuadrado-celeste"></div> <b style={{ paddingLeft: "4px", paddingRight: "20px" }}> Lote</b>
+                                    <div className="cuadrado-rojo"></div> <b style={{ paddingLeft: "4px" }}> Lote sin asignar</b>
+                                </div>
+
+                            </Col>
+
+                        </Row>
+                    </>
             }
 
 
