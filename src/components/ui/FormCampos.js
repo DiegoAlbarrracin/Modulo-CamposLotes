@@ -215,7 +215,7 @@ function FormCampos({ editarCampoValues, cancelar, notificacion }) {
                             hasFeedback
                             rules={[{
                                 // required: true,
-                                message: "Ingrese solo numeros",
+                                message: "Ingrese solo números",
                                 pattern: "^[0-9,$]*$"
                             }]}>
                             <Input name="acopio" onChange={handleChange} className="input-style" />
@@ -225,7 +225,7 @@ function FormCampos({ editarCampoValues, cancelar, notificacion }) {
                             hasFeedback
                             rules={[{
                                 // required: true,
-                                message: "Ingrese solo numeros",
+                                message: "Ingrese solo números",
                                 pattern: "^[0-9,$]*$"
                             }]}>
                             <Input name="kmsplanta" onChange={handleChange} className="input-style" />

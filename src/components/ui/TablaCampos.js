@@ -14,7 +14,6 @@ import {
     Popconfirm,
     Select,
     Popover,
-    Alert
 } from "antd";
 import {
     EditOutlined,
@@ -55,7 +54,7 @@ function TablaCampos() {
     const [filter, setFilter] = useState(2); // 0 campos. 1 lotes. 2 nada.
     const [open, setOpen] = useState(false);
 
-    const [tableDataCampos, setTableDataCampos] = useState();
+    const [tableDataCampos, setTableDataCampos] = useState([]);
     const [campo, setCampo] = useState();
     const [lote, setLote] = useState();
     const [tableDataLotes, setTableDataLotes] = useState();
@@ -80,9 +79,6 @@ function TablaCampos() {
     const [currentPage, setCurrentPage] = useState(1); // Pagina tabla campos
 
     const [datosFilterResult, setDatosFilterResult] = useState();
-
-    // Acceso al modulo-campos-lotes desde modulo_vistaCliente, cuando cliente no posee lotes
-    const [clienteSinLotes, setClienteSinLotes] = useState(false);
 
     // State para mostrar visualmente si una busqueda por lote arroja o no resultados y que eso afecte visualmente a la tabla Campos
     const [filtroLoteNoResult, setFiltroLoteNoResult] = useState(false);
@@ -165,7 +161,6 @@ function TablaCampos() {
         let indexSinCampo = jsonData?.findIndex((campo) => campo.key === 0);
         if (!jsonData[indexSinCampo].lotes && !jsonData[0].lotes) {
             //console.log('Cliente sin lotes')
-            setClienteSinLotes(true);
             setLoading(false);
             setDatosFiltrados([]);
             return
@@ -925,13 +920,7 @@ function TablaCampos() {
     return (
         <div className={loading ? "loading-spin" : "tabla-main-wrapper"}>
 
-            {clienteSinLotes ? <Row style={{ paddingTop: "20px", display: "flex", justifyContent: "center"}}>
-                <Col xs={12} sm={12} md={12}>
-                    <Alert message="Este cliente no tiene lotes asignados. Si desea agregar un nuevo lote para este cliente, por favor ingrese al módulo 'Campos y Lotes' desde el menú." type="info" showIcon />
-                </Col>
-
-            </Row> :
-
+            {
                 loading ? <Spin spinning={true} indicator={loadingIcon} tip="Cargando" size="large"><div style={{ color: 'transparent' }}>Cargando...</div></Spin> :
                     <>
                         <h3 className="titulo-modulo" >CAMPOS</h3>

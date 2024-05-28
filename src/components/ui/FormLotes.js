@@ -228,7 +228,7 @@ function FormLotes({ editarLoteValues, cancelar, notificacion, dataCampos }) {
                             rules={[
                                 {
                                     required: true,
-                                    message: "Ingrese solo numeros",
+                                    message: "Ingrese solo números",
                                     pattern: "^[0-9,$]*$"
                                 }
                             ]}>
