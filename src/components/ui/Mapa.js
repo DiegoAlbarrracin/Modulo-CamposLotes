@@ -26,8 +26,10 @@ const Mapa = ({ editarArea, dataCamposLotes, editarLoteValues, switchValue, most
   const [layersFill, setLayersFill] = useState([]); // Layer que pinta el lote seleccionado
   const [mapReady, setMapReady] = useState(false);
 
+  const [isControlAdded, setIsControlAdded] = useState(false);
 
-  const { setAreaMapa, polygonEdit, reloadMap, setGeojson, ubicacionCampo, ubicacionLote, ubicacionMapa, zoomMapa, guardar, setMapLoaded } = useContext(GlobalContext);
+
+  const { setAreaMapa, polygonEdit, reloadMap, setGeojson, ubicacionCampo, ubicacionLote, ubicacionMapa, zoomMapa, guardar, setMapLoaded, status } = useContext(GlobalContext);
 
 
   useEffect(() => {
@@ -280,14 +282,17 @@ const Mapa = ({ editarArea, dataCamposLotes, editarLoteValues, switchValue, most
 
   }, [coordinates]);
 
-
+  //console.log('status Mapa componente: ', status)
   //Mostrar/Ocultar controles para dibujar poligono
   useEffect(() => {
-
+    // console.log('editarArea UE: ', editarArea)
     //Si queremos crear Campo o Lote
     if (editarArea || editarArea === 0) {
-      //console.log("PONER CONTROLES")
-      map.current.addControl(draw.current);
+
+      if (!isControlAdded) {
+        map.current.addControl(draw.current);
+        setIsControlAdded(true);
+      }
 
       //Si estamos editando Campo o Lote
       if (Object.keys(editarArea).length > 1) {
@@ -306,8 +311,9 @@ const Mapa = ({ editarArea, dataCamposLotes, editarLoteValues, switchValue, most
 
     } else {
       //console.log("SACAR CONTROLES")
-      if (draw.current) {
+      if (draw.current && isControlAdded) {
         map.current.removeControl(draw.current);
+        setIsControlAdded(false);
       }
     };
 
