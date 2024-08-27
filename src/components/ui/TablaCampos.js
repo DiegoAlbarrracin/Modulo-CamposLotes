@@ -156,15 +156,18 @@ function TablaCampos() {
         };
         const data = await fetch(`${URL}campos-lotes-master.php`, requestOptions);
         const jsonData = await data.json();
+        console.log('jsonData CAMPOS', jsonData)
+
+        let indexSinCampo = jsonData?.findIndex((campo) => campo.key === 0);
 
         // Validacion clientes que no poseen ningun lote, al acceder a este modulo, desde modulo_vistaCliente.
-        let indexSinCampo = jsonData?.findIndex((campo) => campo.key === 0);
-        if (!jsonData[indexSinCampo].lotes && !jsonData[0].lotes) {
-            //console.log('Cliente sin lotes')
-            setLoading(false);
-            setDatosFiltrados([]);
-            return
-        };
+        // Validacion retirada, ya que ahora quieren que aunque un campo de un cliente no tenga lotes, lo muestre igual.
+        // if (!jsonData[indexSinCampo].lotes && !jsonData[0].lotes) {
+        //     //console.log('Cliente sin lotes')
+        //     setLoading(false);
+        //     setDatosFiltrados([]);
+        //     return
+        // };
 
         // Validacion si solo posee asignados, quitar seccion 'lotes sin asignar'
         if (!jsonData[indexSinCampo].lotes) {
