@@ -156,7 +156,6 @@ function TablaCampos() {
         };
         const data = await fetch(`${URL}campos-lotes-master.php`, requestOptions);
         const jsonData = await data.json();
-        console.log('jsonData CAMPOS', jsonData)
 
         let indexSinCampo = jsonData?.findIndex((campo) => campo.key === 0);
 
